@@ -8,9 +8,10 @@
   <style>
     body {
       background: var(--bg);
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
       color: var(--text);
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
     }
     .preview-header {
       background: var(--primary);
@@ -33,56 +34,12 @@
       margin: 0;
       font-size: 1.2em;
       font-weight: 600;
-      flex: 1;
-      text-align: center;
-    }
-    .preview-container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 30px 20px;
-    }
-    .preview-frame-wrapper {
-      background: #faf3e0;
-      border-radius: 16px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.1);
-      padding: 20px;
-      position: relative;
-      min-height: 500px;
-    }
-    body.dark .preview-frame-wrapper {
-      background: #2c2824;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.4);
     }
     .preview-frame {
       width: 100%;
-      height: 80vh;
+      height: calc(100vh - 60px); /* full height below header */
       border: none;
-      border-radius: 8px;
       background: white;
-      opacity: 0;
-      transition: opacity 0.5s ease;
-    }
-    .preview-frame.loaded {
-      opacity: 1;
-    }
-    .loading-card {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      color: #8b5e3c;
-      font-weight: 600;
-      font-size: 1.3em;
-      background: rgba(255,255,255,0.85);
-      padding: 20px 30px;
-      border-radius: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      transition: opacity 0.4s ease;
-    }
-    body.dark .loading-card {
-      background: rgba(44,40,36,0.85);
-      color: #d4a373;
     }
   </style>
 </head>
@@ -95,34 +52,11 @@
       Back
     </a>
     <h2 id="book-title">Preview</h2>
-    <div></div>
   </div>
 
-  <div class="preview-container">
-    <div class="preview-frame-wrapper">
-      <div id="loading-card" class="loading-card">📖 Opening preview…</div>
-      <iframe id="preview-iframe" class="preview-frame" src="" allowfullscreen
-        onload="onFrameLoad()"
-        onerror="onFrameError()"></iframe>
-    </div>
-  </div>
+  <iframe id="preview-iframe" class="preview-frame" src="" allowfullscreen></iframe>
 
   <script>
-    function onFrameLoad() {
-      document.getElementById('preview-iframe').classList.add('loaded');
-      const loading = document.getElementById('loading-card');
-      if (loading) loading.style.opacity = '0';
-      setTimeout(() => { if (loading) loading.style.display = 'none'; }, 400);
-    }
-
-    function onFrameError() {
-      const loading = document.getElementById('loading-card');
-      if (loading) {
-        loading.innerHTML = '❌ Preview unavailable';
-        loading.style.opacity = '1';
-      }
-    }
-
     async function loadPreview() {
       const params = new URLSearchParams(window.location.search);
       const bookId = params.get('bookId');
@@ -130,20 +64,24 @@
         document.getElementById('book-title').textContent = 'No book specified';
         return;
       }
+
       try {
+        // Get the preview URL from our API
         const res = await fetch(`/api/books/${bookId}/preview`);
         if (res.ok) {
           const data = await res.json();
           document.getElementById('preview-iframe').src = data.previewUrl;
+          // Also set the title – we can fetch the book name separately, but for simplicity we'll just say "Preview"
+          document.getElementById('book-title').textContent = 'Book Preview';
         } else {
-          onFrameError();
+          document.getElementById('book-title').textContent = 'Preview not available';
         }
       } catch (e) {
-        onFrameError();
+        document.getElementById('book-title').textContent = 'Error loading preview';
       }
     }
 
     loadPreview();
   </script>
 </body>
-</html>s
+</html>
