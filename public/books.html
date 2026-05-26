@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explore Books - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f0e8;
+      color: #3a2c1b;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .back-link {
+      margin-bottom: 10px;
+      display: inline-block;
+      color: #8b5e3c;
+      text-decoration: none;
+    }
+    .book-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: #faf5e6;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+      transition: transform 0.2s ease;
+      border: 1px solid #e0d6c8;
+    }
+    .book-item:hover { transform: translateX(5px); }
+    .book-cover-small {
+      width: 60px;
+      height: 85px;
+      object-fit: cover;
+      border-radius: 4px;
+      background: #e0d6c8;
+      flex-shrink: 0;
+    }
+    .no-cover-small {
+      width: 60px;
+      height: 85px;
+      background: #e0d6c8;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: #6b5d4f;
+      flex-shrink: 0;
+    }
+    .book-item .book-info { flex: 1; }
+    .book-item strong { font-size: 1.1em; color: #5a3e28; }
+    .book-item .book-info div { color: #3a2c1b; }
+    .book-item .details-link {
+      color: #8b5e3c;
+      text-decoration: none;
+      font-weight: bold;
+      margin-left: auto;
+      white-space: nowrap;
+    }
+    .book-item .details-link:hover { text-decoration: underline; }
+    .read-btn, .preview-btn {
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      text-decoration: none;
+      font-weight: bold;
+      margin-left: 10px;
+      white-space: nowrap;
+    }
+    .read-btn { background: #8b5e3c; }
+    .preview-btn { background: #b08968; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link">← Back to Feed</a>
+    <h1 style="color:#8b5e3c;">📚 Explore Books</h1>
+    <div id="book-list">
+  <div class="skeleton" style="height:80px; margin-bottom:10px;"></div>
+  <div class="skeleton" style="height:80px; margin-bottom:10px;"></div>
+  <div class="skeleton" style="height:80px; margin-bottom:10px;"></div>
+</div>
+  </div>
+  <script>
+    async function loadBooks() {
+      const res = await fetch('/api/books');
+      const books = await res.json();
+      const container = document.getElementById('book-list');
+      container.innerHTML = books.map(book => {
+        // Google Books thumbnail (if ID exists)
+        const coverUrl = book.google_books_id
+          ? `https://books.google.com/books/content?id=${book.google_books_id}&printsec=frontcover&img=1&zoom=1&source=gbs_api`
+          : null;
+
+        const imgHTML = coverUrl
+          ? `<img src="${coverUrl}" alt="${escapeHTML(book.title)} cover" class="book-cover-small" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+          : '';
+
+        const placeholderHTML = `<div class="no-cover-small" style="display:${coverUrl ? 'none' : 'flex'};">📖</div>`;
+
+        return `
+          <div class="book-item">
+            ${imgHTML}
+            ${placeholderHTML}
+            <div class="book-info">
+              <strong>${escapeHTML(book.title)}</strong>
+              <div>by ${escapeHTML(book.author)}</div>
+              <div style="font-size:0.9em; color:#6b5d4f;">${escapeHTML(book.genre)} • Ages ${book.min_age}-${book.max_age}</div>
+            </div>
+            <a href="book.html?id=${book.id}" class="details-link">View Details →</a>
+            ${book.has_text ? `<a href="read.html?bookId=${book.id}" class="read-btn">📖 Read Now</a>` : ''}
+            ${!book.has_text && book.google_books_id ? `<a href="preview.html?bookId=${book.id}" class="preview-btn">🔍 Preview</a>` : ''}
+            ${!book.has_text && !book.google_books_id ? `<span style="color:#b08968; font-size:0.8em; margin-left:10px; white-space:nowrap;">📖 Not yet available</span>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    loadBooks();
+  </script>
+</body>
+</html>

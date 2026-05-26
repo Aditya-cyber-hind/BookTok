@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book News - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      color: var(--text);
+      margin: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 20px;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .page-title {
+      color: var(--primary);
+      font-size: 2.2em;
+      font-weight: 700;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .refresh-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 25px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85em;
+    }
+    .refresh-btn:hover { background: var(--primary-hover); }
+    .news-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border-left: 4px solid var(--primary);
+      transition: transform 0.2s;
+    }
+    .news-card:hover { transform: translateX(4px); }
+    .news-source {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.7em;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      background: var(--primary);
+      color: white;
+    }
+    .news-title {
+      font-size: 1.2em;
+      font-weight: 700;
+      color: #5a3e28;
+      margin-bottom: 6px;
+    }
+    .news-title a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .news-title a:hover { text-decoration: underline; }
+    .news-summary {
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .news-date {
+      font-size: 0.8em;
+      color: var(--text-light);
+      margin-top: 8px;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-light);
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-light);
+    }
+    .generated-at {
+      font-size: 0.8em;
+      color: var(--text-light);
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Feed
+    </a>
+    
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
+      <h1 class="page-title">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8b5e3c" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+        Book News
+      </h1>
+      <button class="refresh-btn" onclick="loadNews()">Refresh News</button>
+    </div>
+
+    <div class="generated-at" id="generated-at"></div>
+    <div id="news-container">
+      <div class="loading">Fetching the latest book news...</div>
+    </div>
+  </div>
+
+  <script>
+    async function loadNews() {
+      const container = document.getElementById('news-container');
+      container.innerHTML = '<div class="loading">Fetching the latest book news...</div>';
+
+      try {
+        const res = await fetch('/api/book-news');
+        const data = await res.json();
+
+        if (!data.success || !data.articles || !data.articles.length) {
+          container.innerHTML = '<div class="empty-state">No book news available right now. Check back later!</div>';
+          return;
+        }
+
+        document.getElementById('generated-at').textContent = `Last updated: ${new Date(data.generatedAt).toLocaleString()}`;
+        
+        container.innerHTML = data.articles.map(article => `
+          <div class="news-card">
+            <span class="news-source">${escapeHTML(article.source)}</span>
+            <div class="news-title"><a href="${escapeHTML(article.url)}" target="_blank">${escapeHTML(article.title)}</a></div>
+            <div class="news-summary">${escapeHTML(article.summary)}</div>
+            <div class="news-date">${escapeHTML(article.date)}</div>
+          </div>
+        `).join('');
+      } catch (e) {
+        container.innerHTML = '<div class="empty-state">Could not load news. Please try again later.</div>';
+        console.error(e);
+      }
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    loadNews();
+  </script>
+</body>
+</html>

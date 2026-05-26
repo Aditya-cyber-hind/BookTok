@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Character Chat - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', sans-serif;
+      padding: 0;
+      margin: 0;
+      color: var(--text);
+    }
+    .app-header {
+      background: var(--primary);
+      color: white;
+      padding: 15px 25px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .app-header a {
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .app-header h1 {
+      margin: 0;
+      font-size: 1.5em;
+      font-weight: 700;
+    }
+
+    /* Browse mode */
+    .browse-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 25px;
+    }
+    .search-bar {
+      width: 100%;
+      padding: 12px 18px;
+      border-radius: 30px;
+      border: 2px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+      font-size: 1em;
+      margin-bottom: 20px;
+      transition: border 0.3s;
+    }
+    .search-bar:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .filter-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 25px;
+    }
+    .filter-tag {
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 0.85em;
+      font-weight: 600;
+      transition: all 0.2s;
+      background: var(--card-bg);
+      color: var(--text);
+    }
+    .filter-tag.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .filter-tag:hover {
+      background: var(--accent);
+      color: #3a2c1b;
+    }
+    .character-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .character-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      border: 2px solid transparent;
+    }
+    .character-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      border-color: var(--primary);
+    }
+    .char-emoji {
+      font-size: 3em;
+      margin-bottom: 10px;
+    }
+    .char-name {
+      font-weight: 700;
+      font-size: 1.15em;
+      color: #5a3e28;
+      margin-bottom: 4px;
+    }
+    .char-book {
+      font-size: 0.8em;
+      color: var(--text-light);
+      margin-bottom: 8px;
+    }
+    .char-desc {
+      font-size: 0.85em;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    /* Chat mode */
+    .chat-container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: none;
+    }
+    .chat-header {
+      background: var(--primary);
+      color: white;
+      padding: 15px 25px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .chat-header button {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 1.2em;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .chat-header .chat-char-name {
+      font-weight: 700;
+      font-size: 1.1em;
+    }
+    .messages-area {
+      height: 450px;
+      overflow-y: auto;
+      padding: 20px;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .msg {
+      max-width: 80%;
+      padding: 12px 18px;
+      border-radius: 20px;
+      line-height: 1.5;
+      animation: fadeInUp 0.3s ease;
+    }
+    .msg.user {
+      align-self: flex-end;
+      background: var(--primary);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    .msg.character {
+      align-self: flex-start;
+      background: var(--accent, #f0e4ce);
+      color: #3a2c1b;
+      border-bottom-left-radius: 4px;
+    }
+    .input-area {
+      display: flex;
+      gap: 10px;
+      padding: 15px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--card-bg);
+    }
+    .input-area input {
+      flex: 1;
+      padding: 12px 18px;
+      border-radius: 25px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.95em;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 25px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      background: var(--primary);
+      color: white;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .typing {
+      align-self: flex-start;
+      color: var(--text-light);
+      font-style: italic;
+      padding: 8px 18px;
+      display: none;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="app-header">
+    <a href="index.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Feed
+    </a>
+    <h1 id="header-title">🎭 Character Chat</h1>
+    <div></div>
+  </div>
+
+  <!-- Browse mode -->
+  <div class="browse-container" id="browse-mode">
+    <input type="text" class="search-bar" id="search-bar" placeholder="🔍 Search characters, books, or genres..." oninput="filterCharacters()">
+    <div class="filter-tags" id="filter-tags"></div>
+    <div class="character-grid" id="character-grid"></div>
+  </div>
+
+  <!-- Chat mode -->
+  <div class="chat-container" id="chat-mode">
+    <div class="chat-header">
+      <button onclick="goBack()">←</button>
+      <div>
+        <div class="chat-char-name" id="chat-char-name"></div>
+        <div style="font-size:0.8em; opacity:0.8;" id="chat-char-book"></div>
+      </div>
+    </div>
+    <div class="messages-area" id="messages"></div>
+    <div class="typing" id="typing">Typing…</div>
+    <div class="input-area">
+      <input type="text" id="user-input" placeholder="Type your message…" onkeypress="if(event.key==='Enter') sendMessage()">
+      <button class="btn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // Character database
+    const characters = [
+      { name: "Sherlock Holmes", book: "Sherlock Holmes series", author: "Arthur Conan Doyle", genre: "Mystery", emoji: "🕵️", desc: "Brilliant detective with razor-sharp observation skills and a knack for solving the impossible." },
+      { name: "Hermione Granger", book: "Harry Potter series", author: "J.K. Rowling", genre: "Fantasy", emoji: "📚", desc: "The brightest witch of her age, loyal friend, and champion of house-elf rights." },
+      { name: "Gandalf", book: "The Lord of the Rings", author: "J.R.R. Tolkien", genre: "Fantasy", emoji: "🧙", desc: "A wise and powerful wizard who guides the fellowship through Middle‑earth's darkest hours." },
+      { name: "Katniss Everdeen", book: "The Hunger Games", author: "Suzanne Collins", genre: "Dystopian", emoji: "🏹", desc: "The Girl on Fire — a skilled archer who became the face of a revolution." },
+      { name: "The Mad Hatter", book: "Alice in Wonderland", author: "Lewis Carroll", genre: "Fantasy", emoji: "🎩", desc: "Eccentric, whimsical, and delightfully mad — you never know what he'll say next." },
+      { name: "Atticus Finch", book: "To Kill a Mockingbird", author: "Harper Lee", genre: "Classics", emoji: "⚖️", desc: "A principled lawyer and devoted father who stands for justice in a divided town." },
+      { name: "Elizabeth Bennet", book: "Pride and Prejudice", author: "Jane Austen", genre: "Romance", emoji: "👒", desc: "Witty, independent, and unafraid to speak her mind in Regency‑era England." },
+      { name: "Captain Nemo", book: "20,000 Leagues Under the Sea", author: "Jules Verne", genre: "Sci‑Fi", emoji: "🌊", desc: "Enigmatic commander of the Nautilus — brilliant inventor, explorer, and mystery." },
+      { name: "Dracula", book: "Dracula", author: "Bram Stoker", genre: "Horror", emoji: "🧛", desc: "The legendary Transylvanian count — charming, terrifying, and immortal." },
+      { name: "Jo March", book: "Little Women", author: "Louisa May Alcott", genre: "Classics", emoji: "✒️", desc: "Ambitious writer, loving sister, and a fiercely independent young woman." },
+      { name: "Huckleberry Finn", book: "Adventures of Huckleberry Finn", author: "Mark Twain", genre: "Adventure", emoji: "⛵", desc: "Free‑spirited boy who escapes society's rules for adventure on the Mississippi River." },
+      { name: "Frankenstein's Monster", book: "Frankenstein", author: "Mary Shelley", genre: "Horror", emoji: "🧟", desc: "Misunderstood creation seeking acceptance — deeply intelligent and tragically lonely." },
+      { name: "Jay Gatsby", book: "The Great Gatsby", author: "F. Scott Fitzgerald", genre: "Classics", emoji: "🥂", desc: "Mysterious millionaire with a heart full of hope and a past he can't escape." },
+      { name: "Alice", book: "Alice in Wonderland", author: "Lewis Carroll", genre: "Fantasy", emoji: "🐰", desc: "Curious, polite, and bravely navigating the strangest of wonderlands." },
+      { name: "Scout Finch", book: "To Kill a Mockingbird", author: "Harper Lee", genre: "Classics", emoji: "👧", desc: "Inquisitive, brave, and wise beyond her years — growing up in a world of injustice." },
+      { name: "Count of Monte Cristo", book: "The Count of Monte Cristo", author: "Alexandre Dumas", genre: "Adventure", emoji: "⚔️", desc: "Master of disguise and revenge — patient, brilliant, and utterly determined." },
+      { name: "Mr. Darcy", book: "Pride and Prejudice", author: "Jane Austen", genre: "Romance", emoji: "🎩", desc: "Proud yet deeply honorable gentleman whose love transforms him." },
+      { name: "Anne Shirley", book: "Anne of Green Gables", author: "L.M. Montgomery", genre: "Children", emoji: "🧡", desc: "Imaginative, talkative, and endlessly optimistic red‑headed orphan." },
+      { name: "Captain Ahab", book: "Moby Dick", author: "Herman Melville", genre: "Adventure", emoji: "🐋", desc: "Obsessed whaling captain driven by revenge against the great white whale." },
+      { name: "Dorothy Gale", book: "The Wonderful Wizard of Oz", author: "L. Frank Baum", genre: "Fantasy", emoji: "👠", desc: "A brave Kansas girl who just wants to find her way home." },
+      { name: "Long John Silver", book: "Treasure Island", author: "Robert Louis Stevenson", genre: "Adventure", emoji: "🦜", desc: "Charismatic pirate with a wooden leg — charming, cunning, and dangerous." },
+      { name: "Hester Prynne", book: "The Scarlet Letter", author: "Nathaniel Hawthorne", genre: "Historical Fiction", emoji: "❤️‍🩹", desc: "Strong, resilient woman who bears society's judgment with quiet dignity." },
+      { name: "Peter Pan", book: "Peter Pan", author: "J.M. Barrie", genre: "Fantasy", emoji: "🧚", desc: "The boy who never grows up — adventurous, cocky, and full of mischief." },
+      { name: "Shere Khan", book: "The Jungle Book", author: "Rudyard Kipling", genre: "Adventure", emoji: "🐅", desc: "Fearsome Bengal tiger who commands respect and fear in the jungle." },
+      { name: "Holden Caulfield", book: "The Catcher in the Rye", author: "J.D. Salinger", genre: "Classics", emoji: "🧢", desc: "Cynical yet sensitive teenager searching for authenticity in a phony world." },
+      { name: "Scrooge", book: "A Christmas Carol", author: "Charles Dickens", genre: "Classics", emoji: "🎄", desc: "Miserly old man who discovers the true spirit of Christmas through ghostly visits." },
+      { name: "Dr. Jekyll / Mr. Hyde", book: "Strange Case of Dr. Jekyll and Mr. Hyde", author: "Robert Louis Stevenson", genre: "Horror", emoji: "🧪", desc: "A brilliant scientist with a dark, uncontrollable alter‑ego lurking within." },
+      { name: "Tintin", book: "The Adventures of Tintin", author: "Hergé", genre: "Adventure", emoji: "🐶", desc: "Intrepid young reporter who travels the world solving mysteries with his dog Snowy." },
+      { name: "Matilda", book: "Matilda", author: "Roald Dahl", genre: "Children", emoji: "📖", desc: "A gifted little girl with telekinetic powers and a deep love for books." },
+      { name: "Voldemort", book: "Harry Potter series", author: "J.K. Rowling", genre: "Fantasy", emoji: "🐍", desc: "The darkest wizard of all time — feared, powerful, and consumed by immortality." },
+      { name: "Aslan", book: "The Chronicles of Narnia", author: "C.S. Lewis", genre: "Fantasy", emoji: "🦁", desc: "The great lion — wise, majestic, and the true king of Narnia." },
+      { name: "Dr. Watson", book: "Sherlock Holmes series", author: "Arthur Conan Doyle", genre: "Mystery", emoji: "🩺", desc: "Loyal friend, doctor, and chronicler of Holmes's greatest adventures." },
+      { name: "Moby Dick", book: "Moby Dick", author: "Herman Melville", genre: "Adventure", emoji: "🐋", desc: "The legendary white whale — enormous, enigmatic, and unstoppable." },
+      { name: "Winnie the Pooh", book: "Winnie-the-Pooh", author: "A.A. Milne", genre: "Children", emoji: "🍯", desc: "A bear of very little brain but a very big heart — always hungry for honey." },
+      { name: "Pippi Longstocking", book: "Pippi Longstocking", author: "Astrid Lindgren", genre: "Children", emoji: "🧦", desc: "Strongest girl in the world — independent, quirky, and endlessly fun." },
+      { name: "Raskolnikov", book: "Crime and Punishment", author: "Fyodor Dostoevsky", genre: "Classics", emoji: "🪓", desc: "A troubled young man grappling with guilt, morality, and redemption." },
+      { name: "Jane Eyre", book: "Jane Eyre", author: "Charlotte Brontë", genre: "Romance", emoji: "📜", desc: "Passionate, principled governess who refuses to compromise her self‑worth." },
+      { name: "Draco Malfoy", book: "Harry Potter series", author: "J.K. Rowling", genre: "Fantasy", emoji: "🐉", desc: "Proud Slytherin with a sharp tongue and a conflicted heart." },
+      { name: "Paddington Bear", book: "A Bear Called Paddington", author: "Michael Bond", genre: "Children", emoji: "🧸", desc: "A polite, marmalade‑loving bear from Peru who finds adventure in London." },
+      { name: "Bilbo Baggins", book: "The Hobbit", author: "J.R.R. Tolkien", genre: "Fantasy", emoji: "🗡️", desc: "A reluctant hobbit adventurer who discovers courage he never knew he had." }
+    ];
+
+    let currentCharacter = null;
+    let allGenres = [...new Set(characters.map(c => c.genre))].sort();
+
+    // Init browse mode
+    function renderBrowse() {
+      renderFilterTags();
+      renderCards(characters);
+    }
+
+    function renderFilterTags() {
+      const container = document.getElementById('filter-tags');
+      container.innerHTML = `<span class="filter-tag active" onclick="filterByGenre('all')">All</span>` +
+        allGenres.map(g => `<span class="filter-tag" onclick="filterByGenre('${g}')">${g}</span>`).join('');
+    }
+
+    function filterByGenre(genre) {
+      document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      const searchTerm = document.getElementById('search-bar').value.toLowerCase();
+      let filtered = genre === 'all' ? characters : characters.filter(c => c.genre === genre);
+      if (searchTerm) {
+        filtered = filtered.filter(c => 
+          c.name.toLowerCase().includes(searchTerm) ||
+          c.book.toLowerCase().includes(searchTerm) ||
+          c.author.toLowerCase().includes(searchTerm) ||
+          c.genre.toLowerCase().includes(searchTerm)
+        );
+      }
+      renderCards(filtered);
+    }
+
+    function filterCharacters() {
+      const searchTerm = document.getElementById('search-bar').value.toLowerCase();
+      const activeGenre = document.querySelector('.filter-tag.active')?.textContent || 'All';
+      let filtered = activeGenre === 'All' ? characters : characters.filter(c => c.genre === activeGenre);
+      if (searchTerm) {
+        filtered = filtered.filter(c => 
+          c.name.toLowerCase().includes(searchTerm) ||
+          c.book.toLowerCase().includes(searchTerm) ||
+          c.author.toLowerCase().includes(searchTerm) ||
+          c.genre.toLowerCase().includes(searchTerm)
+        );
+      }
+      renderCards(filtered);
+    }
+
+    function renderCards(list) {
+      const grid = document.getElementById('character-grid');
+      if (!list.length) {
+        grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; padding:40px; color:var(--text-light);">No characters found. Try a different search!</p>';
+        return;
+      }
+      grid.innerHTML = list.map(c => `
+        <div class="character-card" onclick="startChat('${c.name}', '${c.book}', '${c.author}', '${c.emoji}')">
+          <div class="char-emoji">${c.emoji}</div>
+          <div class="char-name">${c.name}</div>
+          <div class="char-book">${c.book} · ${c.author}</div>
+          <div class="char-desc">${c.desc}</div>
+        </div>
+      `).join('');
+    }
+
+    // Chat mode
+    function startChat(name, book, author, emoji) {
+      currentCharacter = { name, book, author, emoji };
+      document.getElementById('browse-mode').style.display = 'none';
+      document.getElementById('chat-mode').style.display = 'block';
+      document.getElementById('header-title').textContent = `${emoji} ${name}`;
+      document.getElementById('chat-char-name').textContent = name;
+      document.getElementById('chat-char-book').textContent = `From "${book}" by ${author}`;
+      document.getElementById('messages').innerHTML = '';
+      addMessage('character', `Hello dear reader! I'm ${name} from "${book}". What shall we talk about?`);
+    }
+
+    function goBack() {
+      document.getElementById('chat-mode').style.display = 'none';
+      document.getElementById('browse-mode').style.display = 'block';
+      document.getElementById('header-title').textContent = '🎭 Character Chat';
+      currentCharacter = null;
+    }
+
+    async function sendMessage() {
+      if (!currentCharacter) return;
+      const input = document.getElementById('user-input');
+      const message = input.value.trim();
+      if (!message) return;
+
+      addMessage('user', message);
+      input.value = '';
+      document.getElementById('typing').style.display = 'block';
+
+      try {
+        const res = await fetch('/api/character-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ character: currentCharacter.name, message })
+        });
+        const data = await res.json();
+        document.getElementById('typing').style.display = 'none';
+        addMessage('character', data.reply || 'I seem to be lost in my own story. Try again?');
+      } catch (e) {
+        document.getElementById('typing').style.display = 'none';
+        addMessage('character', 'The library is closed right now. Please try later.');
+      }
+    }
+
+    function addMessage(role, text) {
+      const container = document.getElementById('messages');
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.textContent = text;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // Start
+    renderBrowse();
+  </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Post - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 30px;
+      box-shadow: var(--shadow);
+    }
+    textarea, input[type="text"], input[type="file"] {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 15px;
+      font-family: inherit;
+      font-size: 0.95em;
+      color: var(--text);
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 25px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    button:hover { background: var(--primary-hover); }
+    #quote-toggle {
+      background: var(--accent);
+      color: #3a2c1b;
+      margin-bottom: 15px;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 20px;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    /* SVG icons alignment */
+    button svg, .back-link svg {
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Back link with custom arrow -->
+    <a href="index.html" class="back-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Feed
+    </a>
+
+    <!-- Page heading with custom pencil/edit icon -->
+    <h1 style="display:flex; align-items:center; gap:8px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5e3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Create Post
+    </h1>
+
+    <!-- Normal post form -->
+    <div id="normal-post-form">
+      <textarea id="post-content" placeholder="What are you reading?" rows="4"></textarea>
+      <input type="text" id="post-tags" placeholder="Tags (comma separated)" />
+      <input type="file" id="post-media" accept="image/*,video/*" />
+      <button onclick="publishPost()" style="background: var(--secondary);">
+        <!-- Post icon -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Post
+      </button>
+    </div>
+
+    <!-- Quote post form -->
+    <div id="quote-post-form" style="display:none;">
+      <textarea id="quote-text" placeholder="Enter the quote..." rows="3"></textarea>
+      <input type="text" id="quote-author" placeholder="Author (optional)" />
+      <input type="text" id="quote-book" placeholder="Book title (optional)" />
+      <input type="text" id="post-tags-quote" placeholder="Tags (comma separated)" oninput="document.getElementById('post-tags').value = this.value" />
+      <button onclick="publishPost()" style="background: var(--secondary);">
+        <!-- Quote icon -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>
+        Post Quote
+      </button>
+    </div>
+
+    <!-- Quote toggle button -->
+    <button id="quote-toggle" onclick="toggleQuoteMode()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Switch to Quote
+    </button>
+  </div>
+
+  <script>
+    let currentQuoteMode = false;
+
+    function toggleQuoteMode() {
+      currentQuoteMode = !currentQuoteMode;
+      const normalForm = document.getElementById('normal-post-form');
+      const quoteForm = document.getElementById('quote-post-form');
+      const toggleBtn = document.getElementById('quote-toggle');
+      // Update button HTML with proper SVG icons
+      if (currentQuoteMode) {
+        normalForm.style.display = 'none';
+        quoteForm.style.display = 'block';
+        toggleBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Switch to Normal Post`;
+      } else {
+        normalForm.style.display = 'block';
+        quoteForm.style.display = 'none';
+        toggleBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Switch to Quote`;
+      }
+    }
+
+    async function publishPost() {
+      const isQuote = currentQuoteMode;
+      const content = document.getElementById('post-content').value.trim();
+      const tagsRaw = document.getElementById('post-tags').value;
+      const tagsArray = tagsRaw.split(',').map(t => t.trim()).filter(t => t);
+      const fileInput = document.getElementById('post-media');
+
+      if (isQuote) {
+        const quoteText = document.getElementById('quote-text').value.trim();
+        const quoteAuthor = document.getElementById('quote-author').value.trim();
+        const quoteBook = document.getElementById('quote-book').value.trim();
+        if (!quoteText) return alert('Please enter the quote text');
+        const body = { type: 'quote', quote_text: quoteText, quote_author: quoteAuthor, quote_book_title: quoteBook, tags: tagsArray.join(',') };
+        await fetch('/api/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        document.getElementById('quote-text').value = '';
+        document.getElementById('quote-author').value = '';
+        document.getElementById('quote-book').value = '';
+      } else {
+        if (!content) return alert('Write something!');
+        const formData = new FormData();
+        formData.append('content', content);
+        formData.append('tags', tagsArray.join(','));
+        if (fileInput.files[0]) formData.append('media', fileInput.files[0]);
+        await fetch('/api/posts', { method: 'POST', body: formData });
+        document.getElementById('post-content').value = '';
+        fileInput.value = '';
+      }
+
+      document.getElementById('post-tags').value = '';
+      alert('Post published!');
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>

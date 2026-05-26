@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="story-viewer.js"></script>
+  <style>
+    body {
+      background: var(--bg, #f5f0e8);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      color: var(--text, #3a2c1b);
+    }
+    .profile-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--card-bg, white);
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: var(--primary, #8b5e3c);
+      text-decoration: none;
+    }
+    #profile-pic {
+      width: 150px;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 50%;
+      background: #eee;
+      margin-bottom: 10px;
+    }
+    #bio-text {
+      white-space: pre-wrap;
+      background: var(--bg, #faf5e6);
+      padding: 10px;
+      border-radius: 6px;
+      margin: 10px 0;
+    }
+    textarea, input[type="text"], input[type="password"], input[type="file"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--border, #ddd);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      background: var(--card-bg, white);
+      color: var(--text, #3a2c1b);
+    }
+    button {
+      background: var(--primary, #8b5e3c);
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+    .post {
+      background: var(--bg, #fdfaf3);
+      border-left: 4px solid var(--primary, #8b5e3c);
+      padding: 12px;
+      margin: 12px 0;
+      border-radius: 6px;
+    }
+    .post .content { margin: 6px 0; }
+    .post .tags { font-style: italic; color: #888; font-size: 0.9em; }
+    .reading-list-item {
+      background: var(--bg, #faf5e6);
+      padding: 6px;
+      margin: 4px 0;
+      border-radius: 4px;
+    }
+    .profile-badge {
+      display: inline-block;
+      background: gold;
+      color: #333;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin: 2px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .block-btn { background: var(--danger, #e74c3c); }
+
+    /* status bubble */
+    #status-section {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    /* settings menu */
+    .settings-menu {
+      position: absolute;
+      top: 30px;
+      right: 30px;
+    }
+    .settings-btn {
+      background: none;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      color: var(--primary);
+      padding: 0 6px;
+      border-radius: 50%;
+    }
+    .settings-btn:hover { background: rgba(0,0,0,0.05); }
+    .dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 40px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      z-index: 20;
+      min-width: 180px;
+    }
+    .dropdown button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 10px 15px;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 0.95em;
+      cursor: pointer;
+    }
+    .dropdown button:hover { background: var(--bg); }
+    .dropdown button.danger { color: var(--danger); }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 30;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: 12px;
+      max-width: 400px;
+      width: 90%;
+    }
+    .status-media-preview {
+      max-width: 100px;
+      max-height: 100px;
+      border-radius: 8px;
+      margin-top: 4px;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+  <div class="profile-container">
+    <a href="index.html" class="back-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Feed
+    </a>
+
+    <!-- Status Bubble -->
+      <div id="status-section" onclick="openStoryViewerForUser()">    
+      <img id="status-avatar" src="default-avatar.png" style="width:40px; height:40px; border-radius:50%;">
+      <div style="flex:1;">
+        <strong id="status-text">No status yet</strong>
+        <div style="font-size:0.8em; color: var(--text-light);">Tap to add</div>
+      </div>
+    </div>
+
+    <div class="settings-menu" id="settings-menu-container" style="display:none;">
+      <button class="settings-btn" onclick="toggleDropdown()">⋮</button>
+      <div class="dropdown" id="settings-dropdown">
+        <button onclick="openModal('bio-modal')">📝 Edit Bio</button>
+        <button onclick="openModal('password-modal')">🔑 Change Password</button>
+        <button onclick="openModal('username-modal')">✏️ Change Username</button>
+        <button onclick="openModal('picture-modal')">🖼️ Change Profile Picture</button>
+        <button onclick="openModal('delete-modal')" class="danger">🗑️ Delete Account</button>
+      </div>
+    </div>
+
+    <div id="profile-content"></div>
+  </div>
+
+  <!-- Modals (hidden) -->
+  <div class="modal-overlay" id="bio-modal">
+    <div class="modal-content">
+      <h3>Edit Bio</h3>
+      <textarea id="edit-bio" rows="4" placeholder="Tell others about yourself..."></textarea>
+      <button onclick="saveBio()">Update Bio</button>
+      <button onclick="closeModal('bio-modal')" style="background:#aaa;">Cancel</button>
+      <p id="bio-status"></p>
+    </div>
+  </div>
+  <div class="modal-overlay" id="password-modal">
+    <div class="modal-content">
+      <h3>Change Password</h3>
+      <input type="password" id="current-password" placeholder="Current password" />
+      <input type="password" id="new-password" placeholder="New password (min 6 chars)" />
+      <input type="password" id="confirm-password" placeholder="Confirm new password" />
+      <button onclick="changePassword()">Update Password</button>
+      <button onclick="closeModal('password-modal')" style="background:#aaa;">Cancel</button>
+      <p id="password-status"></p>
+    </div>
+  </div>
+  <div class="modal-overlay" id="username-modal">
+    <div class="modal-content">
+      <h3>Change Username</h3>
+      <input type="text" id="edit-username" placeholder="New username" />
+      <button onclick="saveUsername()">Update Username</button>
+      <button onclick="closeModal('username-modal')" style="background:#aaa;">Cancel</button>
+      <p id="username-status"></p>
+    </div>
+  </div>
+  <div class="modal-overlay" id="picture-modal">
+    <div class="modal-content">
+      <h3>Change Profile Picture</h3>
+      <input type="file" id="pic-input" accept="image/*">
+      <button onclick="uploadProfilePic()">Upload Picture</button>
+      <button onclick="closeModal('picture-modal')" style="background:#aaa;">Cancel</button>
+      <p id="pic-status"></p>
+    </div>
+  </div>
+  <div class="modal-overlay" id="delete-modal">
+    <div class="modal-content">
+      <h3>Delete Account</h3>
+      <p>This action is permanent. All your data will be erased.</p>
+      <input type="password" id="delete-password" placeholder="Enter your password to confirm" />
+      <button onclick="deleteAccount()" style="background: var(--danger);">Delete My Account</button>
+      <button onclick="closeModal('delete-modal')" style="background:#aaa;">Cancel</button>
+      <p id="delete-status"></p>
+    </div>
+  </div>
+
+  <!-- Status Modal (now with file upload) -->
+  <div class="modal-overlay" id="status-modal">
+    <div class="modal-content" style="max-width:450px;">
+      <h3>📲 What's on your mind?</h3>
+      <input type="text" id="status-input" placeholder="e.g., Currently reading The Hobbit…" style="width:100%;">
+      <input type="file" id="status-media" accept="image/*,video/*" style="margin:10px 0;">
+      <button onclick="postStatus()">Post Status</button>
+      <button onclick="closeModal('status-modal')" style="background:#aaa;">Cancel</button>
+      <div id="status-list" style="margin-top:15px;"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    let profileUserId = params.get('id');
+    if (!profileUserId) {
+      document.getElementById('profile-content').innerHTML = '<p>No user specified.</p>';
+    } else {
+      if (profileUserId === 'me') {
+        (async () => {
+          const meRes = await fetch('/api/me');
+          if (!meRes.ok) {
+            document.getElementById('profile-content').innerHTML = '<p>Please log in.</p>';
+            return;
+          }
+          const meData = await meRes.json();
+          profileUserId = meData.id;
+          loadProfileAndMe(profileUserId);
+        })();
+      } else {
+        loadProfileAndMe(profileUserId);
+      }
+    }
+
+    let me = null;
+    function toggleDropdown() {
+      const d = document.getElementById('settings-dropdown');
+      d.style.display = d.style.display === 'block' ? 'none' : 'block';
+    }
+    function openModal(id) {
+      document.getElementById(id).style.display = 'flex';
+      if (id === 'bio-modal') {
+        const currentBio = document.getElementById('bio-text')?.textContent.trim();
+        document.getElementById('edit-bio').value = currentBio === 'No bio yet.' ? '' : currentBio;
+      }
+      toggleDropdown();
+    }
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    async function loadProfileAndMe(profileId) {
+      try {
+        const meRes = await fetch('/api/me');
+        if (meRes.ok) me = await meRes.json();
+      } catch(e) {}
+      loadProfile(profileId);
+    }
+
+    async function loadProfile(id) {
+      try {
+        const res = await fetch(`/api/profile/${id}`);
+        if (!res.ok) {
+          document.getElementById('profile-content').innerHTML = '<p>User not found.</p>';
+          return;
+        }
+        const data = await res.json();
+        const u = data.user;
+        const posts = data.posts;
+        const badges = data.badges || [];
+        const genres = u.favourite_genres?.length ? u.favourite_genres.join(', ') : 'Not set';
+        const joined = new Date(u.created_at).toLocaleDateString();
+        const isOwner = me && me.id === u.id;
+
+        document.getElementById('settings-menu-container').style.display = isOwner ? 'block' : 'none';
+        document.getElementById('status-section').style.display = isOwner ? 'flex' : 'none';
+
+        let profilePicHTML = '';
+        if (data.avatar_seed) {
+          const style = data.avatar_style || 'adventurer';
+          const seed = encodeURIComponent(data.avatar_seed);
+          const dicebearURL = `https://api.dicebear.com/9.x/${style}/svg?seed=${seed}`;
+          profilePicHTML = `<img id="profile-pic" src="${dicebearURL}" alt="Avatar" style="width:150px; height:150px; border-radius:50%;">`;
+        } else if (u.profile_pic_url) {
+          profilePicHTML = `<img id="profile-pic" src="${u.profile_pic_url}" alt="Profile picture" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22%3E%3Crect width=%22150%22 height=%22150%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2220%22%3ENo Photo%3C/text%3E%3C/svg%3E'">`;
+        } else {
+          profilePicHTML = `<img id="profile-pic" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22%3E%3Crect width=%22150%22 height=%22150%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2220%22%3ENo Photo%3C/text%3E%3C/svg%3E" alt="Default avatar">`;
+        }
+
+        let readingListHTML = '';
+        if (isOwner) {
+          try {
+            const listRes = await fetch('/api/reading-list');
+            const list = await listRes.json();
+            if (list.length > 0) {
+              readingListHTML = `<h3>📚 My Reading List</h3><div>${list.map(b => {
+                let statusText = b.status === 'currently_reading' ? `📖 ${b.progress||0} / ${b.total_pages||'?'} pages` :
+                                b.status === 'finished' ? '✅ Finished' : '📌 Want to Read';
+                return `<div class="reading-list-item">📖 <a href="book.html?id=${b.id}">${escapeHTML(b.title)}</a> by ${escapeHTML(b.author)} – ${statusText}</div>`;
+              }).join('')}</div>`;
+            } else {
+              readingListHTML = '<p>No books in reading list.</p>';
+            }
+          } catch(e) {}
+        }
+
+        let badgesHTML = '';
+        if (badges.length > 0) {
+          badgesHTML = `<h3>🏅 Badges</h3><div>${badges.map(b => `<span class="profile-badge">${b.badge_icon} ${b.badge_name}</span>`).join(' ')}</div>`;
+        }
+
+        let blockHTML = (me && u.id !== me.id) ? `<button class="block-btn" onclick="toggleBlockUser(${u.id})" style="margin-top:10px;">🚫 Block</button>` : '';
+        let avatarEditHTML = isOwner ? `<a href="avatar.html" style="text-decoration:none;"><button type="button" style="background:#8e44ad; margin-bottom:15px;">🎨 Edit Avatar</button></a>` : '';
+
+        document.getElementById('profile-content').innerHTML = `
+          <div style="text-align:center;">${profilePicHTML}</div>
+          <h1>${escapeHTML(u.username)}</h1>
+          <p><strong>Joined:</strong> ${joined}</p>
+          <p><strong>Favourite Genres:</strong> ${genres}</p>
+          ${badgesHTML}
+          ${blockHTML}
+          <h3>Bio</h3>
+          <div id="bio-section"><div id="bio-text">${escapeHTML(u.bio || 'No bio yet.')}</div></div>
+          ${avatarEditHTML}
+          ${readingListHTML}
+          <h3>Recent Posts</h3>
+          <div id="user-posts">
+            ${posts.length === 0 ? '<p>No posts yet.</p>' : posts.map(p => `
+              <div class="post">
+                <div class="content">${escapeHTML(p.content)}</div>
+                <div class="tags">${p.tags.map(t => '#'+t).join(', ')}</div>
+                <span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5e3c" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> ${p.like_count}
+                </span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+
+        loadStatus();
+      } catch(err) {
+        document.getElementById('profile-content').innerHTML = '<p>Error loading profile.</p>';
+      }
+    }
+
+    // ─── STATUS FUNCTIONS ───
+    async function loadStatus() {
+      if (!profileUserId) return;
+      const res = await fetch(`/api/status/${profileUserId}`);
+      const statuses = await res.json();
+      const latest = statuses[0];
+      const statusText = document.getElementById('status-text');
+      const statusAvatar = document.getElementById('status-avatar');
+      if (latest) {
+        statusText.textContent = latest.content || '📷 Photo/Video';
+        if (latest.media_url) {
+          statusAvatar.src = latest.media_url;
+        } else {
+          const pic = document.getElementById('profile-pic');
+          if (pic) statusAvatar.src = pic.src;
+        }
+      } else {
+        statusText.textContent = 'No status yet';
+        const pic = document.getElementById('profile-pic');
+        if (pic) statusAvatar.src = pic.src;
+      }
+    }
+
+    function openStatusModal() {
+      if (!me || me.id != profileUserId) return;
+      document.getElementById('status-modal').style.display = 'flex';
+      loadMyStatuses();
+    }
+
+    async function loadMyStatuses() {
+      if (!me) return;
+      const res = await fetch(`/api/status/${me.id}`);
+      const statuses = await res.json();
+      const list = document.getElementById('status-list');
+      list.innerHTML = statuses.map(s => `
+        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
+          <div>
+            <span>${escapeHTML(s.content)}</span>
+            ${s.media_url ? `<br><img src="${s.media_url}" class="status-media-preview" alt="status media">` : ''}
+          </div>
+          <small style="color:var(--text-light);">${new Date(s.created_at).toLocaleString()}</small>
+          <button onclick="deleteStatus(${s.id})" style="background:var(--danger); color:white; border:none; padding:2px 8px; border-radius:4px;">X</button>
+        </div>
+      `).join('') || '<p>No active statuses.</p>';
+    }
+
+    async function postStatus() {
+      const content = document.getElementById('status-input').value.trim();
+      const fileInput = document.getElementById('status-media');
+      const file = fileInput.files[0];
+      if (!content && !file) return alert('Please write something or attach media.');
+
+      const formData = new FormData();
+      formData.append('content', content);
+      if (file) formData.append('media', file);
+
+      const res = await fetch('/api/status', {
+        method: 'POST',
+        body: formData   // browser sets multipart/form-data automatically
+      });
+      if (res.ok) {
+        document.getElementById('status-input').value = '';
+        fileInput.value = '';
+        loadMyStatuses();
+        loadStatus();
+      } else {
+        alert('Failed to post status');
+      }
+    }
+
+    async function deleteStatus(id) {
+      await fetch(`/api/status/${id}`, { method: 'DELETE' });
+      loadMyStatuses();
+      loadStatus();
+    }
+
+    // ─── OTHER ACTIONS ───
+    async function saveBio() {
+      const newBio = document.getElementById('edit-bio').value.trim();
+      const res = await fetch('/api/profile/bio', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio: newBio })
+      });
+      if (res.ok) {
+        document.getElementById('bio-text').textContent = newBio || 'No bio yet.';
+        document.getElementById('bio-status').textContent = 'Bio updated!';
+        closeModal('bio-modal');
+      } else {
+        alert('Failed to update bio.');
+      }
+    }
+
+    async function saveUsername() {
+      const newUsername = document.getElementById('edit-username').value.trim();
+      if (!newUsername) return alert('Username cannot be empty');
+      const res = await fetch('/api/profile/username', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newUsername })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        document.querySelector('h1').textContent = newUsername;
+        document.getElementById('username-status').textContent = 'Username updated!';
+        closeModal('username-modal');
+      } else {
+        alert(data.error || 'Failed');
+      }
+    }
+
+    async function changePassword() {
+      const currentPassword = document.getElementById('current-password').value;
+      const newPassword = document.getElementById('new-password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+      if (!currentPassword || !newPassword || !confirmPassword) return alert('All fields required');
+      if (newPassword !== confirmPassword) return alert('Passwords do not match');
+      if (newPassword.length < 6) return alert('Minimum 6 characters');
+
+      const res = await fetch('/api/profile/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        document.getElementById('password-status').textContent = 'Password changed!';
+        closeModal('password-modal');
+      } else {
+        alert(data.error || 'Failed');
+      }
+    }
+
+    async function uploadProfilePic() {
+      const fileInput = document.getElementById('pic-input');
+      if (!fileInput.files || !fileInput.files[0]) return alert('Please select an image');
+      const formData = new FormData();
+      formData.append('profile_pic', fileInput.files[0]);
+      const res = await fetch('/api/profile/upload-picture', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (res.ok) {
+        closeModal('picture-modal');
+        loadProfile(profileUserId);
+      } else {
+        alert(data.error || 'Upload failed');
+      }
+    }
+
+    async function deleteAccount() {
+      const password = document.getElementById('delete-password').value;
+      if (!password) return alert('Please enter your password to confirm.');
+
+      const res = await fetch('/api/account', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('Your account has been deleted.');
+        window.location.href = 'index.html';
+      } else {
+        alert(data.error || 'Failed to delete account.');
+      }
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+async function openStoryViewerForUser() {
+  if (!profileUserId) return;
+  const res = await fetch(`/api/status/${profileUserId}`);
+  const statuses = await res.json();
+  if (statuses.length) {
+    openStoryViewer(statuses);
+  }
+}
+  </script>
+</body>
+</html>

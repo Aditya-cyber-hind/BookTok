@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activities - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      color: var(--text);
+      margin: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 20px;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+    .page-title {
+      color: var(--primary);
+      font-size: 2.2em;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .page-subtitle {
+      color: var(--text-light);
+      margin-bottom: 30px;
+      font-size: 1.05em;
+    }
+    .activities-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .activity-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+      border: 2px solid transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .activity-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.1);
+      border-color: var(--primary);
+    }
+    .activity-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6em;
+      color: white;
+      flex-shrink: 0;
+    }
+    .activity-info h3 {
+      margin: 0 0 4px;
+      font-size: 1.15em;
+      color: #5a3e28;
+      font-weight: 700;
+    }
+    .activity-info p {
+      margin: 0;
+      font-size: 0.88em;
+      color: var(--text-light);
+      line-height: 1.5;
+    }
+    .badge-new {
+      background: var(--primary);
+      color: white;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.7em;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Feed
+    </a>
+    <h1 class="page-title">Activities</h1>
+    <p class="page-subtitle">Discover games, chats, and creative tools — all inside BookTok.</p>
+
+    <div class="activities-grid">
+      <!-- Character Chat -->
+      <a href="character-chat.html" class="activity-card">
+        <div class="activity-icon" style="background:#8b5e3c;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div class="activity-info">
+          <h3>Character Chat</h3>
+          <p>Talk with your favourite book characters, powered by AI.</p>
+        </div>
+      </a>
+
+      <!-- Character Lookalike Game -->
+      <a href="game-character.html" class="activity-card">
+        <div class="activity-icon" style="background:#6b4e2b;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        <div class="activity-info">
+          <h3>Character Lookalike</h3>
+          <p>Upload a photo and discover which book character you resemble.</p>
+        </div>
+      </a>
+
+      <!-- Writo Studio -->
+      <a href="writo.html" class="activity-card">
+        <div class="activity-icon" style="background:#e67e22;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </div>
+        <div class="activity-info">
+          <h3>Writo Studio</h3>
+          <p>Write stories with an AI co‑writer and generate custom book covers.</p>
+        </div>
+      </a>
+
+      <!-- Stories -->
+      <a href="stories.html" class="activity-card">
+        <div class="activity-icon" style="background:#e74c3c;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+        </div>
+        <div class="activity-info">
+          <h3>Community Stories</h3>
+          <p>Read stories written by other BookTok members.</p>
+        </div>
+      </a>
+
+      <!-- BookMate -->
+      <a href="bookmate.html" class="activity-card">
+        <div class="activity-icon" style="background:#c0392b;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="activity-info">
+          <h3>BookMate</h3>
+          <p>Find your reading soulmate based on shared books and genres.</p>
+        </div>
+      </a>
+     
+     <a href="book-news.html" class="activity-card">
+  <div class="activity-icon" style="background:#3498db;">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+  </div>
+  <div class="activity-info">
+    <h3>Book News</h3>
+    <p>Stay updated with the latest book and publishing news.</p>
+  </div>
+</a>
+
+      <!-- Libby AI -->
+      <a href="ai-chat.html" class="activity-card">
+        <div class="activity-icon" style="background:#6b8e23;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        </div>
+        <div class="activity-info">
+          <h3>Libby AI</h3>
+          <p>Chat with your AI librarian for book recommendations and more.</p>
+        </div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

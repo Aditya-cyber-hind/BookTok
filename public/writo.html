@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Writo – Book Writing Studio</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --writo-bg: #f5f2eb;
+      --writo-card: #ffffff;
+      --writo-text: #3a2c1b;
+      --writo-accent: #8b5e3c;
+      --writo-border: #e0d6c8;
+      --writo-hover: #f0e4ce;
+      --writo-shadow: 0 8px 24px rgba(0,0,0,0.05);
+    }
+    body.night-writo {
+      --writo-bg: #1a1816;
+      --writo-card: #2a2724;
+      --writo-text: #ede0d4;
+      --writo-accent: #c49a6c;
+      --writo-border: #4a4036;
+      --writo-hover: #3a322a;
+      --writo-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    body {
+      background: var(--writo-bg);
+      color: var(--writo-text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 0;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .writo-header {
+      background: var(--writo-accent);
+      color: white;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .writo-header a {
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .writo-header h1 {
+      margin: 0;
+      font-size: 1.4em;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .main-layout {
+      display: flex;
+      height: calc(100vh - 56px);
+      gap: 0;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: var(--writo-card);
+      padding: 20px;
+      border-right: 1px solid var(--writo-border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      box-shadow: var(--writo-shadow);
+    }
+    .sidebar h3 {
+      margin: 0 0 8px;
+      font-size: 0.9em;
+      font-weight: 600;
+      color: var(--writo-accent);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .btn {
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      font-size: 0.85em;
+      background: var(--writo-accent);
+      color: white;
+      transition: opacity 0.2s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn:hover { opacity: 0.9; transform: scale(1.02); }
+    .btn-secondary {
+      background: transparent;
+      color: white;
+      border: 2px solid white;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+    .icon-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1em;
+      border: none;
+      background: transparent;
+      color: var(--writo-text);
+    }
+    .icon-btn:hover { background: var(--writo-hover); }
+
+    /* Writing area */
+    .writing-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--writo-card);
+      margin: 20px;
+      border-radius: 20px;
+      box-shadow: var(--writo-shadow);
+      overflow: hidden;
+    }
+    .title-input {
+      border: none;
+      font-size: 2em;
+      font-weight: 700;
+      padding: 20px 30px;
+      background: transparent;
+      color: var(--writo-text);
+    }
+    .title-input::placeholder { color: var(--writo-border); }
+
+    .rich-toolbar {
+      display: flex;
+      gap: 4px;
+      padding: 8px 24px;
+      background: var(--writo-bg);
+      border-bottom: 1px solid var(--writo-border);
+      flex-wrap: wrap;
+    }
+    .rich-toolbar button, .rich-toolbar select, .rich-toolbar input[type="color"] {
+      background: transparent;
+      border: 1px solid var(--writo-border);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 0.8em;
+      cursor: pointer;
+      color: var(--writo-text);
+      font-weight: 500;
+      height: 32px;
+      transition: background 0.2s;
+    }
+    .rich-toolbar button:hover, .rich-toolbar select:hover { background: var(--writo-hover); }
+    .rich-toolbar input[type="color"] { width: 30px; padding: 2px; }
+    .content-editor {
+      flex: 1;
+      border: none;
+      padding: 20px 30px;
+      font-size: 1.15em;
+      line-height: 1.8;
+      overflow-y: auto;
+      background: transparent;
+      color: var(--writo-text);
+      outline: none;
+      font-family: 'Georgia', 'Times New Roman', serif;
+    }
+    .content-editor:empty:before {
+      content: "Start writing your masterpiece…";
+      color: var(--writo-border);
+    }
+    .toolbar-footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 30px;
+      border-top: 1px solid var(--writo-border);
+      font-size: 0.85em;
+    }
+
+    /* AI panel */
+    .ai-panel {
+      width: 300px;
+      background: var(--writo-card);
+      margin: 20px 20px 20px 0;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--writo-shadow);
+      overflow: hidden;
+    }
+    .ai-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--writo-border);
+    }
+    .ai-header h2 { margin: 0 0 8px; font-size: 1.1em; }
+    .ai-chat {
+      flex: 1;
+      padding: 12px 20px;
+      overflow-y: auto;
+      background: var(--writo-bg);
+    }
+    .ai-message {
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      max-width: 85%;
+    }
+    .ai-message.user { background: var(--writo-accent); color: white; align-self: flex-end; }
+    .ai-message.writo { background: var(--writo-hover); color: var(--writo-text); }
+    .ai-input-area {
+      display: flex;
+      gap: 8px;
+      padding: 12px 20px;
+      border-top: 1px solid var(--writo-border);
+    }
+    .ai-input-area input {
+      flex: 1;
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--writo-border);
+      background: var(--writo-bg);
+      color: var(--writo-text);
+    }
+  </style>
+</head>
+<body>
+  <div class="writo-header">
+    <div style="display:flex; gap:16px; align-items:center;">
+      <a href="index.html">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back
+      </a>
+      <h1>📝 Writo</h1>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="icon-btn" onclick="toggleNightMode()" title="Toggle night mode">🌙</button>
+      <button class="btn btn-secondary" onclick="saveWriting()">💾 Save</button>
+      <button class="btn btn-secondary" onclick="aiGenerate('Continue writing this story')">✍️ Continue</button>
+      <button class="btn" onclick="publishToFeed()">📢 Publish</button>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div>
+        <h3>📁 Folders</h3>
+        <div id="folders-list" style="margin-bottom:6px;"></div>
+        <select id="writings-list" onchange="loadWriting()" style="width:100%; padding:6px; border-radius:8px; border:1px solid var(--writo-border); background:var(--writo-bg); color:var(--writo-text); margin-bottom:4px;">
+          <option value="">New writing…</option>
+        </select>
+        <input type="text" id="new-folder-name" placeholder="New folder…" style="width:100%; padding:6px; border-radius:8px; border:1px solid var(--writo-border); background:var(--writo-bg); color:var(--writo-text); margin-bottom:4px;">
+        <button class="btn btn-secondary" onclick="createFolder()" style="width:100%;">+ Create Folder</button>
+      </div>
+
+      <!-- 🎨 Cover Generator -->
+      <div>
+        <h3>🎨 Cover Generator</h3>
+        <input type="text" id="cover-prompt" placeholder="Describe your ideal cover…" style="width:100%; padding:6px; border-radius:8px; border:1px solid var(--writo-border); background:var(--writo-bg); color:var(--writo-text); margin-bottom:4px;">
+        <button class="btn btn-secondary" onclick="generateCover()" style="width:100%;">✨ Generate</button>
+        <div id="cover-preview" style="margin-top:8px; display:none;">
+          <img id="cover-img" src="" alt="Generated cover" style="width:100%; border-radius:8px; border:1px solid var(--writo-border);">
+          <button class="btn btn-secondary" onclick="saveCover()" style="width:100%; margin-top:4px;">💾 Save Cover</button>
+        </div>
+      </div>
+
+      <div>
+        <h3>🎯 Daily Goal</h3>
+        <input type="number" id="daily-goal" onchange="updateGoal()" value="500" min="100" step="100" style="width:100%; padding:6px; border-radius:8px; border:1px solid var(--writo-border); background:var(--writo-bg); color:var(--writo-text);">
+        <div style="height:6px; background:var(--writo-border); border-radius:3px; margin:8px 0;"><div id="goal-fill" style="height:100%; width:0%; background:var(--writo-accent); border-radius:3px;"></div></div>
+        <div id="goal-text" style="font-size:0.8em;"></div>
+      </div>
+      <div>
+        <h3>🔥 Streak</h3>
+        <p id="streak-display">0 days</p>
+      </div>
+      <div>
+        <h3>💾 Export</h3>
+        <div style="display:flex; gap:4px; flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="exportTXT()">TXT</button>
+          <button class="btn btn-secondary" onclick="exportHTML()">HTML</button>
+          <button class="btn btn-secondary" onclick="window.print()">PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Writing area -->
+    <div class="writing-area">
+      <input type="text" id="writing-title" class="title-input" placeholder="Your book title…">
+      <div class="rich-toolbar">
+        <button onclick="execCmd('undo')">↩</button>
+        <button onclick="execCmd('redo')">↪</button>
+        <button onclick="execCmd('bold')"><b>B</b></button>
+        <button onclick="execCmd('italic')"><i>I</i></button>
+        <button onclick="execCmd('underline')"><u>U</u></button>
+        <button onclick="execCmd('strikethrough')"><s>S</s></button>
+        <select onchange="execCmd('justify'+this.value)" style="width:auto;">
+          <option value="">Align</option>
+          <option value="Left">Left</option>
+          <option value="Center">Center</option>
+          <option value="Right">Right</option>
+          <option value="Full">Justify</option>
+        </select>
+        <button onclick="execCmd('insertUnorderedList')">• List</button>
+        <button onclick="execCmd('insertOrderedList')">1. List</button>
+        <select onchange="execCmd('fontName',this.value)" style="width:auto;">
+          <option value="Georgia">Georgia</option>
+          <option value="Arial">Arial</option>
+          <option value="Times New Roman">Times</option>
+          <option value="Courier New">Courier</option>
+          <option value="Verdana">Verdana</option>
+        </select>
+        <select onchange="execCmd('fontSize',this.value)" style="width:auto;">
+          <option value="2">Small</option>
+          <option value="3">Normal</option>
+          <option value="5">Large</option>
+          <option value="7">Huge</option>
+        </select>
+        <input type="color" onchange="execCmd('foreColor',this.value)">
+        <button onclick="execCmd('removeFormat')">Clear</button>
+      </div>
+
+      <div id="writing-content" class="content-editor" contenteditable="true"></div>
+
+      <div class="toolbar-footer">
+        <span id="word-count">Words: 0</span>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-secondary" onclick="aiGenerate('Write the next paragraph')">✨ AI Paragraph</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI panel -->
+    <div class="ai-panel">
+      <div class="ai-header">
+        <h2>🤖 Co‑Writer</h2>
+        <select id="tone-selector" style="width:100%; padding:6px; border-radius:8px; border:1px solid var(--writo-border); background:var(--writo-bg); color:var(--writo-text); margin-bottom:4px;">
+          <option value="">Default tone</option>
+          <option value="funny">Funny</option>
+          <option value="scary">Scary</option>
+          <option value="poetic">Poetic</option>
+          <option value="professional">Professional</option>
+        </select>
+        <div style="display:flex; gap:4px;">
+          <button class="btn btn-secondary" onclick="aiGenerate('Create a character named...', true)">👤 Char</button>
+          <button class="btn btn-secondary" onclick="aiGenerate('Write a dialogue between two characters about...', true)">💬 Dialog</button>
+          <button class="btn btn-secondary" onclick="aiGenerate('Give me a story outline with 5 chapters', true)">📋 Outline</button>
+        </div>
+      </div>
+      <div class="ai-chat" id="ai-chat">
+        <div class="ai-message writo">I'm your AI writing partner. Ask me to continue, brainstorm, or describe a character!</div>
+      </div>
+      <div class="ai-input-area">
+        <input type="text" id="ai-prompt" placeholder="Ask Writo anything…">
+        <button class="btn" onclick="aiGenerateCustom()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentWritingId = null;
+    let currentFolder = null;
+
+    (async () => {
+      await loadFolders();
+      await loadGoal();
+      await loadWritingsList();
+      setInterval(updateWordCount, 500);
+      updateWordCount();      
+    })();
+
+    // ── WORD COUNT & GOAL ──
+    function updateWordCount() {
+      const text = document.getElementById('writing-content').textContent;
+      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      document.getElementById('word-count').textContent = `Words: ${words}`;
+      const goal = parseInt(document.getElementById('daily-goal').value) || 500;
+      const fill = Math.min(100, Math.round((words / goal) * 100));
+      document.getElementById('goal-fill').style.width = fill + '%';
+      document.getElementById('goal-text').textContent = `${words} / ${goal}`;
+    }
+
+    function execCmd(command, value = null) {
+      document.execCommand(command, false, value);
+      document.getElementById('writing-content').focus();
+    }
+
+    // ── NIGHT MODE ──
+    function toggleNightMode() {
+      document.body.classList.toggle('night-writo');
+    }
+
+    // ── FOLDERS ──
+    async function loadFolders() {
+      const res = await fetch('/api/writo/folders');
+      const folders = await res.json();
+      const div = document.getElementById('folders-list');
+      div.innerHTML = folders.map(f => `<div style="display:flex; justify-content:space-between;"><a href="#" onclick="filterByFolder(${f.id})">${escapeHTML(f.name)}</a> <button class="icon-btn" onclick="deleteFolder(${f.id})">x</button></div>`).join('');
+    }
+    async function createFolder() {
+      const name = document.getElementById('new-folder-name').value.trim();
+      if (!name) return;
+      await fetch('/api/writo/folders', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name}) });
+      document.getElementById('new-folder-name').value = '';
+      loadFolders();
+    }
+    async function deleteFolder(id) { await fetch('/api/writo/folders/' + id, { method:'DELETE' }); loadFolders(); }
+    async function filterByFolder(folderId) { currentFolder = folderId; loadWritingsList(); }
+
+    // ── WRITINGS (LOAD / SAVE / DELETE) ──
+    async function loadWritingsList() {
+      const res = await fetch('/api/writings');
+      let writings = await res.json();
+      if (currentFolder) writings = writings.filter(w => w.folder_id === currentFolder);
+      const sel = document.getElementById('writings-list');
+      sel.innerHTML = '<option value="">New writing…</option>';
+      writings.forEach(w => {
+        const opt = document.createElement('option');
+        opt.value = w.id;
+        opt.textContent = w.title || 'Untitled';
+        sel.appendChild(opt);
+      });
+    }
+
+    async function loadWriting() {
+      const id = document.getElementById('writings-list').value;
+      if (!id) {
+        document.getElementById('writing-title').value = '';
+        document.getElementById('writing-content').innerHTML = '';
+        currentWritingId = null;
+        document.getElementById('cover-preview').style.display = 'none';
+        return;
+      }
+      const res = await fetch(`/api/writings/${id}`);
+      if (res.ok) {
+        const w = await res.json();
+        document.getElementById('writing-title').value = w.title || '';
+        document.getElementById('writing-content').innerHTML = w.content || '';
+        currentWritingId = w.id;
+        if (w.cover_url) {
+          document.getElementById('cover-img').src = w.cover_url;
+          document.getElementById('cover-preview').style.display = 'block';
+        } else {
+          document.getElementById('cover-preview').style.display = 'none';
+        }
+      }
+    }
+
+    async function saveWriting() {
+      const title = document.getElementById('writing-title').value || 'Untitled';
+      const content = document.getElementById('writing-content').innerHTML;
+      const body = { title, content };
+      if (currentWritingId) body.id = currentWritingId;
+      const res = await fetch('/api/writings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (!currentWritingId) {
+          currentWritingId = data.id;
+          await loadWritingsList();
+          document.getElementById('writings-list').value = currentWritingId;
+        }
+        await fetch('/api/writo/streak', { method:'POST' });
+        loadGoal();
+        alert('Saved!');
+      } else {
+        alert('Save failed.');
+      }
+    }
+
+    async function deleteWriting() {
+      if (!currentWritingId) return;
+      if (!confirm('Delete this writing?')) return;
+      await fetch(`/api/writings/${currentWritingId}`, { method:'DELETE' });
+      currentWritingId = null;
+      document.getElementById('writing-title').value = '';
+      document.getElementById('writing-content').innerHTML = '';
+      document.getElementById('cover-preview').style.display = 'none';
+      await loadWritingsList();
+      document.getElementById('writings-list').value = '';
+    }
+
+    // ── COVER GENERATOR ──
+    async function generateCover() {
+      const prompt = document.getElementById('cover-prompt').value.trim();
+      if (!prompt) return alert('Please enter a description for the cover.');
+      const preview = document.getElementById('cover-preview');
+      const img = document.getElementById('cover-img');
+      img.src = '';
+      preview.style.display = 'block';
+      img.alt = 'Generating…';
+      try {
+        const res = await fetch('/api/writo/generate-cover', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, writingId: currentWritingId })
+        });
+        const data = await res.json();
+        if (data.imageUrl) {
+          img.src = data.imageUrl;
+          img.alt = 'Generated cover';
+        } else {
+          alert('Failed to generate cover.');
+          preview.style.display = 'none';
+        }
+      } catch (e) {
+        alert('Error generating cover.');
+        preview.style.display = 'none';
+      }
+    }
+
+    async function saveCover() {
+      if (!currentWritingId) return alert('Save your writing first!');
+      const coverUrl = document.getElementById('cover-img').src;
+      if (!coverUrl) return;
+      await fetch(`/api/writings/${currentWritingId}/save-cover`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coverUrl })
+      });
+      alert('Cover saved!');
+    }
+
+    // ── GOAL & STREAK ──
+    async function loadGoal() {
+      const res = await fetch('/api/writo/goal');
+      const data = await res.json();
+      document.getElementById('daily-goal').value = data.daily_word_goal || 500;
+      document.getElementById('streak-display').textContent = `${data.current_streak || 0} days`;
+    }
+    async function updateGoal() {
+      const goal = parseInt(document.getElementById('daily-goal').value) || 500;
+      await fetch('/api/writo/goal', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({goal}) });
+    }
+
+    // ── PUBLISH ──
+    async function publishToFeed() {
+      const title = document.getElementById('writing-title').value.trim();
+      const content = document.getElementById('writing-content').innerText;
+      if (!title || !content) return alert('Title and content required');
+      const res = await fetch('/api/writo/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, content}) });
+      if (res.ok) alert('Published!');
+    }
+
+    // ── AI HELPERS ──
+    async function aiGenerate(prompt, isSpecial = false) {
+      const tone = document.getElementById('tone-selector').value;
+      if (tone) prompt = `In a ${tone} tone, ${prompt}`;
+      if (isSpecial) prompt = prompt.replace('...', '');
+      const context = document.getElementById('writing-content').innerText;
+      const res = await fetch('/api/writo/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({prompt, context}) });
+      const data = await res.json();
+      if (data.reply) {
+        addAIMessage('writo', data.reply);
+        document.getElementById('writing-content').focus();
+        document.execCommand('insertHTML', false, data.reply);
+      }
+    }
+    async function aiGenerateCustom() {
+      const input = document.getElementById('ai-prompt');
+      const prompt = input.value.trim();
+      if (!prompt) return;
+      addAIMessage('user', prompt);
+      input.value = '';
+      const context = document.getElementById('writing-content').innerText;
+      const res = await fetch('/api/writo/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({prompt, context}) });
+      const data = await res.json();
+      if (data.reply) addAIMessage('writo', data.reply);
+    }
+
+    function addAIMessage(role, text) {
+      const chat = document.getElementById('ai-chat');
+      const div = document.createElement('div');
+      div.className = `ai-message ${role}`;
+      div.textContent = (role === 'user' ? 'You: ' : 'Writo: ') + text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    // ── EXPORT ──
+    function exportTXT() {
+      const text = document.getElementById('writing-content').innerText;
+      const blob = new Blob([text], {type:'text/plain'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (document.getElementById('writing-title').value || 'story') + '.txt';
+      a.click();
+    }
+    function exportHTML() {
+      const html = document.getElementById('writing-content').innerHTML;
+      const blob = new Blob(['<html><body>' + html + '</body></html>'], {type:'text/html'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (document.getElementById('writing-title').value || 'story') + '.html';
+      a.click();
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

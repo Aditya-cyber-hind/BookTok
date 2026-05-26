@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shorts - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; }
+    
+    .shorts-viewport { width: 100%; max-width: 450px; height: 100vh; margin: 0 auto; position: relative; overflow-y: scroll; scroll-snap-type: y mandatory; }
+    
+    .short-item { width: 100%; height: 100vh; scroll-snap-align: start; position: relative; display: flex; align-items: center; justify-content: center; background: #111; }
+    .short-item video { width: 100%; height: 100%; object-fit: contain; cursor: pointer; }
+    .short-item img { width: 100%; height: 100%; object-fit: contain; }
+    
+    .back-btn { position: fixed; top: 16px; left: 16px; z-index: 20; color: white; text-decoration: none; font-weight: 600; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; font-size: 0.9em; }
+    .upload-btn { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 20; background: #8b5e3c; color: white; border: none; padding: 10px 24px; border-radius: 30px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    
+    .side-actions { position: absolute; right: 12px; bottom: 120px; display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 10; }
+    .side-btn { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .side-btn svg { width: 32px; height: 32px; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5)); }
+    .side-btn span { color: white; font-size: 0.7em; font-weight: 700; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+    
+    .bottom-info { position: absolute; bottom: 20px; left: 16px; right: 70px; z-index: 10; }
+    .bottom-info .username { color: white; font-weight: 700; font-size: 1em; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); margin-bottom: 4px; }
+    .bottom-info .caption { color: rgba(255,255,255,0.85); font-size: 0.85em; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
+    
+    .comment-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.92); border-radius: 16px 16px 0 0; padding: 20px; z-index: 30; display: none; max-height: 50%; overflow-y: auto; }
+    .comment-sheet input { width: 100%; padding: 10px; border-radius: 20px; border: none; background: #222; color: white; margin-bottom: 10px; }
+    .comment-sheet h3 { color: white; margin-bottom: 10px; }
+    .comment-item { color: white; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.85em; }
+    .comment-item strong { margin-right: 6px; }
+    .close-sheet { position: absolute; top: 12px; right: 16px; background: none; border: none; color: white; font-size: 1.2em; cursor: pointer; }
+    
+    .owner-delete { position: absolute; top: 60px; right: 12px; z-index: 10; background: rgba(0,0,0,0.5); border: none; color: #e74c3c; padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.8em; cursor: pointer; }
+    
+    .empty-state { height: 100vh; display: flex; align-items: center; justify-content: center; color: #888; font-size: 1.1em; flex-direction: column; gap: 10px; }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-btn">← Back</a>
+  
+  <div class="shorts-viewport" id="shorts-viewport">
+    <div class="empty-state">Loading...</div>
+  </div>
+
+  <button class="upload-btn" onclick="document.getElementById('short-upload').click()">+ Upload Short</button>
+  <input type="file" id="short-upload" accept="video/*" style="display:none" onchange="uploadShort()">
+
+  <script>
+    let currentUser = null;
+    let audioContext = null;
+    let gainNodes = new Map();
+
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', async () => {
+      const me = await fetch('/api/me');
+      if (me.ok) currentUser = await me.json();
+      loadShorts();
+    });
+
+    function boostAudio(video) {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const videoId = video.id;
+      if (gainNodes.has(videoId)) return;
+
+      try {
+        const source = audioContext.createMediaElementSource(video);
+        const gain = audioContext.createGain();
+        gain.gain.value = 4.0;  // 4x amplification
+        source.connect(gain);
+        gain.connect(audioContext.destination);
+        gainNodes.set(videoId, gain);
+      } catch (e) {
+        // Already connected, ignore
+      }
+    }
+
+    async function loadShorts() {
+      const viewport = document.getElementById('shorts-viewport');
+      if (!viewport) {
+        console.error('Viewport not found');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/shorts');
+        const shorts = await res.json();
+        
+        if (!shorts.length) {
+          viewport.innerHTML = '<div class="empty-state">No shorts yet.<br>Be the first to upload!</div>';
+          return;
+        }
+
+        viewport.innerHTML = shorts.map((s) => {
+          const isOwner = currentUser && currentUser.id === s.author_id;
+          const isVideo = s.media_url?.endsWith('.mp4') || s.media_url?.endsWith('.webm');
+          
+          return `
+            <div class="short-item" id="short-${s.id}">
+              ${isVideo
+                ? `<video src="${s.media_url}" loop playsinline id="video-${s.id}" muted preload="auto" crossorigin="anonymous"></video>`
+                : s.media_url
+                  ? `<img src="${s.media_url}">`
+                  : '<div style="color:white;">No media</div>'}
+              
+              ${isOwner ? `<button class="owner-delete" onclick="deleteShort(${s.id})">Delete</button>` : ''}
+              
+              <div class="side-actions">
+                <button class="side-btn" onclick="event.stopPropagation(); toggleLike(${s.id})">
+                  <svg viewBox="0 0 24 24" fill="${s.liked ? '#e74c3c' : 'none'}" stroke="white" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  <span>${s.like_count || 0}</span>
+                </button>
+                <button class="side-btn" onclick="event.stopPropagation(); openComments(${s.id})">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <span>Comment</span>
+                </button>
+              </div>
+              
+              <div class="bottom-info">
+                <div class="username">@${escapeHTML(s.username)}</div>
+                <div class="caption">${escapeHTML(s.content?.substring(0, 150) || '')}</div>
+              </div>
+              
+              <div class="comment-sheet" id="sheet-${s.id}">
+                <button class="close-sheet" onclick="closeComments(${s.id})">✕</button>
+                <h3>Comments</h3>
+                <input type="text" id="comment-input-${s.id}" placeholder="Add a comment..." onkeypress="if(event.key==='Enter') postComment(${s.id})">
+                <div id="comments-list-${s.id}"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        setupVideoObserver();
+      } catch (err) {
+        console.error('Failed to load shorts:', err);
+        viewport.innerHTML = '<div class="empty-state">Could not load shorts.</div>';
+      }
+    }
+
+    function setupVideoObserver() {
+      const items = document.querySelectorAll('.short-item');
+      if (!items.length) return;
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const video = entry.target.querySelector('video');
+          if (!video) return;
+          
+          if (entry.isIntersecting) {
+            video.currentTime = 0;
+            video.volume = 1.0;
+            video.muted = false;
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+            video.muted = true;
+          }
+        });
+      }, { threshold: 0.7 });
+
+      items.forEach(item => observer.observe(item));
+    }
+
+    document.addEventListener('click', (e) => {
+      const video = e.target.closest('video');
+      if (video) {
+        if (audioContext && audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        if (video.muted) {
+          video.muted = false;
+        }
+        video.volume = 1.0;
+        video.play().catch(() => {});
+        boostAudio(video);
+      }
+    });
+
+    async function toggleLike(postId) {
+      await fetch('/api/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId })
+      });
+      loadShorts();
+    }
+
+    async function openComments(postId) {
+      const sheet = document.getElementById(`sheet-${postId}`);
+      if (!sheet) return;
+      sheet.style.display = 'block';
+      const res = await fetch(`/api/posts/${postId}/comments`);
+      const comments = await res.json();
+      const list = document.getElementById(`comments-list-${postId}`);
+      if (!list) return;
+      list.innerHTML = comments.map(c => `
+        <div class="comment-item">
+          <div><strong>${escapeHTML(c.username)}</strong> ${escapeHTML(c.content)}</div>
+        </div>
+      `).join('') || '<p style="color:#999;">No comments yet.</p>';
+    }
+
+    function closeComments(postId) {
+      const sheet = document.getElementById(`sheet-${postId}`);
+      if (sheet) sheet.style.display = 'none';
+    }
+
+    async function postComment(postId) {
+      const input = document.getElementById(`comment-input-${postId}`);
+      if (!input) return;
+      const content = input.value.trim();
+      if (!content) return;
+      await fetch(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+      input.value = '';
+      openComments(postId);
+    }
+
+    async function deleteShort(postId) {
+      if (!confirm('Delete this short?')) return;
+      await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+      loadShorts();
+    }
+
+    async function uploadShort() {
+      const file = document.getElementById('short-upload').files[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('content', '');
+      formData.append('type', 'short');
+      formData.append('isShort', 'true');
+      formData.append('media', file);
+      await fetch('/api/posts', { method: 'POST', body: formData });
+      document.getElementById('short-upload').value = '';
+      loadShorts();
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

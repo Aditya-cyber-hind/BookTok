@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Info - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+    .dashboard-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 30px;
+      box-shadow: var(--shadow);
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 20px;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    h1 {
+      color: var(--primary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .filter-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-row label {
+      font-weight: 600;
+      margin-right: 5px;
+    }
+    .filter-row select {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text);
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 15px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    .stat-card .number {
+      font-size: 2em;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .stat-card .label {
+      font-size: 0.9em;
+      color: var(--text-light);
+      margin-top: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .chart-section {
+      margin-bottom: 30px;
+    }
+    canvas {
+      max-width: 100%;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .section-title {
+      font-size: 1.4em;
+      font-weight: 700;
+      color: var(--primary);
+      margin-top: 20px;
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .post-preview {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .post-preview .text {
+      margin-bottom: 5px;
+    }
+    .post-preview .stats {
+      font-size: 0.9em;
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-light);
+    }
+    svg.icon {
+      flex-shrink: 0;
+    }
+    .chart-section canvas {
+      max-height: 250px;
+    }
+    .unlock-btn {
+      background: var(--accent);
+      color: #3a2c1b;
+      font-weight: bold;
+      padding: 8px 20px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+    }
+    .unlock-btn:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <a href="index.html" class="back-link">
+      <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Feed
+    </a>
+
+    <h1>
+      <svg class="icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8b5e3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Your Dashboard
+    </h1>
+
+    <div class="filter-row">
+      <div>
+        <label for="timeRange">Time Range</label>
+        <select id="timeRange" onchange="updateCharts()">
+          <option value="3">Last 3 months</option>
+          <option value="6">Last 6 months</option>
+          <option value="12" selected>Last 12 months</option>
+          <option value="0">All time</option>
+        </select>
+      </div>
+      <div>
+        <label for="statusFilter">Status</label>
+        <select id="statusFilter" onchange="updateCharts()">
+          <option value="finished">Finished</option>
+          <option value="currently_reading">Currently Reading</option>
+          <option value="want_to_read">Want to Read</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="dashboard-content">
+      <div class="loading">Loading your stats…</div>
+    </div>
+  </div>
+
+  <script>
+    let currentUserPremium = false;
+    let currentUserLibby = false;
+
+    async function loadUserStatus() {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const data = await res.json();
+          currentUserPremium = data.premium_dashboard;
+          currentUserLibby = data.libby_upgraded;
+        }
+      } catch (e) {}
+    }
+
+    async function loadReaderCluster() {
+      const nameEl = document.getElementById('reader-cluster-name');
+      const descEl = document.getElementById('reader-cluster-desc');
+      if (!nameEl) return;
+      const res = await fetch('/api/user/reader-cluster');
+      if (res.ok) {
+        const data = await res.json();
+        nameEl.textContent = data.cluster || 'Unknown';
+        descEl.textContent = data.description || '';
+      } else {
+        nameEl.textContent = 'Unknown';
+        descEl.textContent = '';
+      }
+    }
+
+    async function loadDashboard() {
+      await loadUserStatus();
+
+      const res = await fetch('/api/user/stats');
+      if (!res.ok) {
+        document.getElementById('dashboard-content').innerHTML = '<p>Could not load stats. Are you logged in?</p>';
+        return;
+      }
+      const data = await res.json();
+      const rs = data.readingStats;
+      const totalHours = (rs.totalSeconds / 3600).toFixed(1);
+
+      document.getElementById('dashboard-content').innerHTML = `
+        <div class="section-title">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5e3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          Overview
+        </div>
+        <div class="card-grid">
+          <div class="stat-card">
+            <div class="number">${data.friendsCount}</div>
+            <div class="label">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Friends
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${data.postsCount}</div>
+            <div class="label">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Posts
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${data.totalLikesReceived}</div>
+            <div class="label">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              Likes Received
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${data.totalCommentsReceived}</div>
+            <div class="label">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Comments Received
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="number" id="reader-cluster-name">...</div>
+            <div class="label">Reader Personality</div>
+            <div class="label" id="reader-cluster-desc" style="font-size:0.8em; color:var(--text-light);"></div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5e3c" stroke-width="2" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+          Reading Stats
+        </div>
+        <div class="card-grid">
+          <div class="stat-card">
+            <div class="number">${rs.booksFinished}</div>
+            <div class="label">Books Finished</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${rs.booksReading}</div>
+            <div class="label">Currently Reading</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${rs.booksWantToRead}</div>
+            <div class="label">Want to Read</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${totalHours}h</div>
+            <div class="label">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Total Reading Time
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5e3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Books Finished Per Month
+        </div>
+        <div class="chart-section"><canvas id="monthlyChart"></canvas></div>
+
+        <div class="section-title">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5e3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+          Your Reading Genres
+        </div>
+        <div class="chart-section"><canvas id="genreChart"></canvas></div>
+
+        <div class="section-title">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5e3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Post Performance (Likes & Comments)
+        </div>
+        <div class="chart-section"><canvas id="postChart"></canvas></div>
+
+        <div class="section-title">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5e3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2 1.5-3.5 0-2.8-2.2-5-5-5-1.4 0-2.8.4-3.8 1.2C7.8 5.4 6 8 6 11c0 3.5 2.3 6.4 5.5 7.5"/><polygon points="10,22 8,12 14,18 12,10 16,12 14,8"/></svg>
+          Top Content
+        </div>
+        ${data.mostLikedPost ? `
+          <div class="post-preview">
+            <div class="text"><strong>Most Liked:</strong> ${escapeHTML(data.mostLikedPost.content.substring(0, 80))}…</div>
+            <div class="stats">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> ${data.mostLikedPost.like_count}
+            </div>
+          </div>
+        ` : '<p>No posts yet.</p>'}
+        ${data.mostInteractedPost ? `
+          <div class="post-preview">
+            <div class="text"><strong>Most Interactions:</strong> ${escapeHTML(data.mostInteractedPost.content.substring(0, 80))}…</div>
+            <div class="stats">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              ${data.mostInteractedPost.interaction_count} interactions
+            </div>
+          </div>
+        ` : ''}
+        ${data.recentPost ? `
+          <div class="section-title">
+            <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5e3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Recent Post Performance
+          </div>
+          <div class="post-preview">
+            <div class="text"><strong>Latest Post:</strong> ${escapeHTML(data.recentPost.content.substring(0, 80))}…<br><small>${new Date(data.recentPost.created_at).toLocaleString()}</small></div>
+            <div class="stats">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> ${data.recentPost.like_count}
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> ${data.recentPost.comment_count}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Premium Dashboard section -->
+        <div class="section-title">
+          <svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5e3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Premium Insights
+        </div>
+        <div id="premium-section">
+          ${currentUserPremium ? `
+            <div class="section-title">Reading Pace (pages/month)</div>
+            <div class="chart-section"><canvas id="readingPaceChart"></canvas></div>
+            <div class="section-title">Engagement per Post</div>
+            <div class="chart-section"><canvas id="engagementChart"></canvas></div>
+            <div class="section-title">Genre Radar</div>
+            <div class="chart-section"><canvas id="genreRadarChart"></canvas></div>
+          ` : `
+            <div style="text-align:center; padding:20px;">
+              <p>🔒 Unlock premium charts for 600 LiCo</p>
+              <button class="unlock-btn" onclick="purchasePremium()">Unlock Now</button>
+            </div>
+          `}
+        </div>
+      `;
+
+      loadMonthlyChart();
+      loadGenreChart();
+      loadPostChart();
+      loadReaderCluster();
+
+      if (currentUserPremium) {
+        loadReadingPaceChart();
+        loadEngagementChart();
+        loadGenreRadarChart();
+      }
+    }
+
+    async function loadMonthlyChart() {
+      const months = document.getElementById('timeRange').value;
+      const status = document.getElementById('statusFilter').value;
+      const res = await fetch(`/api/user/monthly-stats?months=${months}&status=${status}`);
+      const data = await res.json();
+      const ctx = document.getElementById('monthlyChart').getContext('2d');
+      if (window.monthlyChartInstance) window.monthlyChartInstance.destroy();
+      window.monthlyChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.months,
+          datasets: [{
+            label: `Books (${status.replace(/_/g, ' ')})`,
+            data: data.counts,
+            backgroundColor: '#8b5e3c',
+            borderRadius: 6
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+      });
+    }
+
+    async function loadGenreChart() {
+      const status = document.getElementById('statusFilter').value;
+      const res = await fetch(`/api/user/genre-stats?status=${status}`);
+      const data = await res.json();
+      const ctx = document.getElementById('genreChart').getContext('2d');
+      if (window.genreChartInstance) window.genreChartInstance.destroy();
+      window.genreChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: data.labels,
+          datasets: [{
+            data: data.values,
+            backgroundColor: ['#8b5e3c','#d4a373','#6b8e23','#e67e22','#9b59b6','#3498db','#e74c3c'],
+            hoverOffset: 4
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+      });
+    }
+
+    async function loadPostChart() {
+      const months = document.getElementById('timeRange').value;
+      const res = await fetch(`/api/user/post-stats?months=${months}`);
+      const data = await res.json();
+      const ctx = document.getElementById('postChart').getContext('2d');
+      if (window.postChartInstance) window.postChartInstance.destroy();
+      window.postChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.months,
+          datasets: [
+            { label: 'Likes Received', data: data.likes, borderColor: '#8b5e3c', backgroundColor: 'rgba(139, 94, 60, 0.1)', tension: 0.3, fill: true },
+            { label: 'Comments Received', data: data.comments, borderColor: '#d4a373', backgroundColor: 'rgba(212, 163, 115, 0.1)', tension: 0.3, fill: true }
+          ]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+      });
+    }
+
+    async function loadReadingPaceChart() {
+      const canvas = document.getElementById('readingPaceChart');
+      if (!canvas) return;
+      const res = await fetch('/api/user/reading-pace');
+      if (!res.ok) return;
+      const data = await res.json();
+      new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: data.months,
+          datasets: [{ label: 'Pages Read', data: data.pages, backgroundColor: '#6b8e23', borderRadius: 4 }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+      });
+    }
+
+    async function loadEngagementChart() {
+      const canvas = document.getElementById('engagementChart');
+      if (!canvas) return;
+      const res = await fetch('/api/user/engagement-details');
+      if (!res.ok) return;
+      const posts = await res.json();
+      const labels = posts.map(p => 'Post ' + p.id);
+      new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Likes', data: posts.map(p => p.likes), backgroundColor: '#8b5e3c' },
+            { label: 'Comments', data: posts.map(p => p.comments), backgroundColor: '#d4a373' }
+          ]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+      });
+    }
+
+    async function loadGenreRadarChart() {
+      const canvas = document.getElementById('genreRadarChart');
+      if (!canvas) return;
+      const res = await fetch('/api/user/genre-radar');
+      if (!res.ok) return;
+      const data = await res.json();
+      new Chart(canvas.getContext('2d'), {
+        type: 'radar',
+        data: {
+          labels: data.labels,
+          datasets: [{
+            label: 'Books Finished',
+            data: data.values,
+            backgroundColor: 'rgba(139,94,60,0.2)',
+            borderColor: '#8b5e3c',
+            pointBackgroundColor: '#8b5e3c'
+          }]
+        },
+        options: { responsive: true, scales: { r: { beginAtZero: true } } }
+      });
+    }
+
+    function updateCharts() {
+      loadMonthlyChart();
+      loadGenreChart();
+      loadPostChart();
+      if (currentUserPremium) {
+        loadReadingPaceChart();
+        loadEngagementChart();
+        loadGenreRadarChart();
+      }
+    }
+
+    async function purchasePremium() {
+      if (!confirm('Spend 600 LiCo to unlock premium charts?')) return;
+      const res = await fetch('/api/lico/unlock-premium-dashboard', { method: 'POST' });
+      if (res.ok) {
+        alert('Premium dashboard unlocked! Reloading…');
+        location.reload();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to unlock');
+      }
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

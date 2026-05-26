@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BookTok</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #faf8f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .splash-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: opacity 0.8s ease;
+    }
+
+    .splash-container.fade-out {
+      opacity: 0;
+    }
+
+    /* Book icon slides in from left */
+    .logo-icon {
+      opacity: 0;
+      transform: translateX(-120px);
+      animation: slideInIcon 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+    }
+
+    @keyframes slideInIcon {
+      0% {
+        opacity: 0;
+        transform: translateX(-120px);
+      }
+      70% {
+        opacity: 1;
+        transform: translateX(8px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* Text slides in from right */
+    .logo-text {
+      opacity: 0;
+      transform: translateX(120px);
+      animation: slideInText 1.2s cubic-bezier(0.16, 1, 0.3, 1) 1.2s forwards;
+    }
+
+    @keyframes slideInText {
+      0% {
+        opacity: 0;
+        transform: translateX(120px);
+      }
+      70% {
+        opacity: 1;
+        transform: translateX(-6px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .logo-text h1 {
+      font-family: 'Playfair Display', 'Georgia', 'Times New Roman', serif;
+      font-size: 4.5em;
+      font-weight: 700;
+      color: #5a3e28;
+      letter-spacing: -1.5px;
+      margin: 0;
+      line-height: 1;
+    }
+
+    .logo-text .tagline {
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      font-size: 0.95em;
+      color: #8b5e3c;
+      margin: 6px 0 0;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      opacity: 0;
+      animation: fadeInTagline 0.8s ease 2.8s forwards;
+    }
+
+    @keyframes fadeInTagline {
+      to { opacity: 1; }
+    }
+
+    /* Subtle pulsing glow on the icon */
+    .logo-icon svg {
+      filter: drop-shadow(0 4px 12px rgba(139, 94, 60, 0.3));
+      animation: gentleGlow 3s ease-in-out 1.5s infinite;
+    }
+
+    @keyframes gentleGlow {
+      0%, 100% { filter: drop-shadow(0 4px 12px rgba(139, 94, 60, 0.3)); }
+      50% { filter: drop-shadow(0 6px 18px rgba(139, 94, 60, 0.5)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="splash-container" id="splash">
+    <!-- Book Icon SVG -->
+    <div class="logo-icon">
+      <svg width="130" height="118" viewBox="0 0 48 42">
+        <!-- Left page -->
+        <path d="M0,6 L18,0 L18,32 L0,38 Z" fill="#8b5e3c" />
+        <!-- Right page -->
+        <path d="M18,0 L36,6 L36,38 L18,32 Z" fill="#a47148" />
+        <!-- Play button (triangle) -->
+        <polygon points="16,14 16,26 23,20" fill="#faf8f5" />
+        <!-- Spine line -->
+        <rect x="17" y="0" width="2" height="32" fill="#d4a373" opacity="0.6" />
+      </svg>
+    </div>
+
+    <!-- Text -->
+    <div class="logo-text">
+      <h1>BookTok</h1>
+      <p class="tagline">Where stories come alive</p>
+    </div>
+  </div>
+
+  <script>
+    // After 5.5 seconds, fade out and redirect
+    setTimeout(() => {
+      document.getElementById('splash').classList.add('fade-out');
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 800);
+    }, 5500);
+  </script>
+</body>
+</html>

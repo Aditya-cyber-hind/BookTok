@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Challenges - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      font-family:'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding:20px;
+    }
+    .container {
+      max-width:700px;
+      margin:0 auto;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding:20px;
+      box-shadow: var(--shadow);
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 15px;
+      color: var(--primary);
+      text-decoration: none;
+    }
+    .challenge {
+      border:1px solid var(--border);
+      padding:15px;
+      margin:12px 0;
+      border-radius:10px;
+      background: var(--bg);
+      transition: transform 0.2s;
+    }
+    .challenge:hover {
+      transform: translateY(-2px);
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background var(--transition);
+    }
+    button:hover {
+      background: var(--primary-hover);
+    }
+    .badge {
+      display:inline-block;
+      background: gold;
+      color:#333;
+      padding:3px 10px;
+      border-radius:12px;
+      margin:2px;
+      font-size:14px;
+      font-weight: bold;
+    }
+    .completed {
+      opacity:0.5;
+    }
+    .progress-bar {
+      width: 100%;
+      background: var(--border);
+      border-radius: 10px;
+      height: 8px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 10px;
+      transition: width 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Feed</a>
+    <h1><i class="fas fa-trophy"></i> Reading Challenges</h1>
+    <div id="challenges-list"></div>
+  </div>
+  <script>
+    async function load() {
+      const res = await fetch('/api/challenges');
+      const challenges = await res.json();
+      const container = document.getElementById('challenges-list');
+      container.innerHTML = challenges.map(c => {
+        const progress = c.user_progress || 0;
+        const completed = c.user_completed;
+        const percent = Math.min(100, Math.round((progress / c.requirement_value) * 100));
+        return `
+          <div class="challenge ${completed ? 'completed' : ''}">
+            <strong>${c.badge_icon} ${escapeHTML(c.name)}</strong> – ${escapeHTML(c.description)}
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:${percent}%;"></div>
+            </div>
+            <div style="margin-top:5px; font-size:0.9em;">
+              Progress: ${progress}/${c.requirement_value}
+              ${completed ? ' ✅ Completed!' : (!c.user_progress ? `<button onclick="join(${c.id})">Join</button>` : '')}
+            </div>
+          </div>
+        `;
+      }).join('') || '<p>No active challenges right now. Start reading and they’ll appear!</p>';
+    }
+
+    async function join(id) {
+      const res = await fetch(`/api/challenges/${id}/join`, { method:'POST' });
+      if (res.ok) load();
+      else alert('Could not join challenge');
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    load();
+  </script>
+</body>
+</html>

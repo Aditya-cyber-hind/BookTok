@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tag - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body style="padding:20px;">
+  <a href="index.html">← Back</a>
+  <h1 id="tag-title"></h1>
+  <div id="tag-posts"></div>
+  <script>
+    const tag = new URLSearchParams(window.location.search).get('tag');
+    document.getElementById('tag-title').textContent = '#' + tag;
+    (async () => {
+      const res = await fetch(`/api/tags/${tag}`);
+      const posts = await res.json();
+      document.getElementById('tag-posts').innerHTML = posts.map(p => `
+        <div style="background:var(--card-bg); padding:12px; margin:8px 0; border-radius:8px;">
+          <strong>${escapeHTML(p.username)}</strong>: ${escapeHTML(p.content)}
+        </div>
+      `).join('') || '<p>No posts with this tag.</p>';
+    })();
+    function escapeHTML(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  </script>
+</body>
+</html>

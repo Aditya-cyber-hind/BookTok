@@ -1,0 +1,42 @@
+/* ── STICKY BOTTOM NAV (Mobile) ── */
+.mobile-bottom-nav {
+  display: none;                     /* hidden on desktop */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--card-bg, #fff);
+  border-top: 1px solid var(--border, #e0d6c8);
+  justify-content: space-around;
+  align-items: center;
+  padding: 6px 0 8px;
+  z-index: 100;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+}
+.mobile-bottom-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-decoration: none;
+  color: var(--text-light, #6b5d4f);
+  font-size: 0.7em;
+  font-weight: 600;
+  padding: 4px 10px;
+  transition: color 0.2s;
+}
+.mobile-bottom-nav a.active {
+  color: var(--primary, #8b5e3c);
+}
+.mobile-bottom-nav svg {
+  width: 22px;
+  height: 22px;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav { display: flex; }
+  body { padding-bottom: 70px; }       /* space for the nav */
+  #right-panel { display: none; }       /* hide sidebar on mobile */
+  #app-container { flex-direction: column; }
+  #feed-panel { width: 100%; }
+}

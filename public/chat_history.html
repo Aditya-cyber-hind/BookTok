@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat History - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding:20px; }
+    .container { max-width: 700px; margin:0 auto; background: var(--card-bg); border-radius: var(--radius); padding:25px; box-shadow: var(--shadow); }
+    .msg { margin:10px 0; padding:10px; border-radius:10px; }
+    .user { background: var(--primary); color:white; text-align:right; }
+    .assistant { background: var(--accent); color:#3a2c1b; }
+    .back-link { color: var(--primary); text-decoration:none; display:inline-block; margin-bottom:15px; }
+    small { color: var(--text-light); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Feed</a>
+    <h1><i class="fas fa-history"></i> Chat History with Libby</h1>
+    <div id="history-list">Loading…</div>
+    <button onclick="clearHistory()" style="background: var(--danger); color:white; border:none; padding:6px 14px; border-radius:20px; cursor:pointer; margin-top:15px;">🗑 Clear History</button>
+  </div>
+
+  <script>
+    async function loadHistory() {
+      const res = await fetch('/api/ai/chat/history');
+      const history = await res.json();
+      const container = document.getElementById('history-list');
+      if (history.length === 0) {
+        container.innerHTML = '<p>No conversations yet. <a href="ai-chat.html">Start chatting with Libby!</a></p>';
+        return;
+      }
+      container.innerHTML = history.map(m => `
+        <div class="msg ${m.role}">
+          <div>${escapeHTML(m.message)}</div>
+          <small>${new Date(m.created_at).toLocaleString()}</small>
+        </div>
+      `).join('');
+    }
+
+    async function clearHistory() {
+      if (!confirm('Delete all chat history?')) return;
+      await fetch('/api/ai/chat/history/clear', { method: 'DELETE' });
+      loadHistory();
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    loadHistory();
+  </script>
+</body>
+</html>

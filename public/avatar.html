@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avatar Maker - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding:20px; }
+    .container { max-width: 700px; margin:0 auto; background: var(--card-bg); border-radius: var(--radius); padding:25px; box-shadow: var(--shadow); }
+    .preview { text-align:center; margin:20px 0; }
+    .preview img { width:150px; height:150px; border-radius:50%; }
+    label { display:block; margin-top:15px; font-weight:600; }
+    select, input[type="text"] { width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background: var(--card-bg); color: var(--text); }
+    button { background: var(--primary); color:white; border:none; padding:8px 20px; border-radius:20px; font-weight:600; cursor:pointer; margin:5px; }
+    button:hover { background: var(--primary-hover); }
+    .back-link { display:block; color:var(--primary); text-decoration:none; margin-bottom:15px; }
+    .style-list { display:flex; gap:10px; flex-wrap:wrap; }
+    .style-card { border:2px solid var(--border); border-radius:10px; padding:10px; text-align:center; cursor:pointer; width:100px; }
+    .style-card.active { border-color: var(--primary); }
+    .style-card img { width:60px; height:60px; border-radius:50%; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="#" onclick="goToProfile(); return false;" class="back-link"><i class="fas fa-arrow-left"></i> Back to Profile</a>
+    <h1>🎨 DiceBear Avatar Maker</h1>
+
+    <div class="preview">
+      <img id="avatar-preview" src="" alt="Avatar preview">
+    </div>
+
+    <label>Avatar Style</label>
+    <div class="style-list" id="style-list"></div>
+
+    <label>Seed (e.g., your username or any word)</label>
+    <input type="text" id="seed" placeholder="Enter a seed…">
+
+    <div style="text-align:center; margin-top:20px;">
+      <button onclick="saveAvatar()"><i class="fas fa-save"></i> Save as Profile Picture</button>
+      <button onclick="resetAvatar()" style="background: var(--danger);"><i class="fas fa-undo"></i> Use Default</button>
+    </div>
+  </div>
+
+  <script>
+    const styles = ['adventurer', 'avataaars', 'bottts', 'croodles', 'fun-emoji', 'lorelei', 'micah', 'miniavs', 'personas', 'pixel-art'];
+    let currentStyle = 'adventurer';
+    let currentSeed = '';
+
+    async function loadConfig() {
+      const res = await fetch('/api/avatar/config');
+      if (res.ok) {
+        const cfg = await res.json();
+        if (cfg && cfg.seed) {
+          currentSeed = cfg.seed;
+          currentStyle = cfg.style || 'adventurer';
+          document.getElementById('seed').value = currentSeed;
+        } else {
+          // Use username as default seed
+          const meRes = await fetch('/api/me');
+          if (meRes.ok) {
+            const me = await meRes.json();
+            currentSeed = me.username;
+            document.getElementById('seed').value = currentSeed;
+          }
+        }
+      }
+      renderStyleList();
+      updatePreview();
+    }
+
+    function renderStyleList() {
+      const container = document.getElementById('style-list');
+      container.innerHTML = styles.map(style => `
+        <div class="style-card ${style === currentStyle ? 'active' : ''}" onclick="selectStyle('${style}')">
+          <img src="https://api.dicebear.com/9.x/${style}/svg?seed=demo" alt="${style}">
+          <div>${style}</div>
+        </div>
+      `).join('');
+    }
+
+    function selectStyle(style) {
+      currentStyle = style;
+      renderStyleList();
+      updatePreview();
+    }
+
+    function updatePreview() {
+      const seed = document.getElementById('seed').value.trim() || 'default';
+      currentSeed = seed;
+      document.getElementById('avatar-preview').src = `https://api.dicebear.com/9.x/${currentStyle}/svg?seed=${encodeURIComponent(seed)}`;
+    }
+
+    document.getElementById('seed').addEventListener('input', updatePreview);
+
+    async function saveAvatar() {
+      const config = { seed: currentSeed, style: currentStyle };
+      await fetch('/api/avatar/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      });
+      alert('Avatar saved!');
+      window.location.href = 'profile.html?id=me';
+    }
+
+    async function resetAvatar() {
+      await fetch('/api/avatar/reset', { method: 'DELETE' });
+      window.location.href = 'profile.html?id=me';
+    }
+
+    async function goToProfile() {
+      const res = await fetch('/api/me');
+      if (res.ok) {
+        const me = await res.json();
+        window.location.href = `profile.html?id=${me.id}`;
+      } else {
+        window.location.href = 'index.html';
+      }
+    }
+
+    loadConfig();
+  </script>
+</body>
+</html>

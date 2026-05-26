@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discover Books - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f0e8;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 10px;
+      color: #8b5e3c;
+      text-decoration: none;
+    }
+    .search-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .search-box input {
+      flex: 1;
+      padding: 10px 15px;
+      border: 1px solid var(--border);
+      border-radius: 25px;
+      font-size: 1em;
+      background: var(--card-bg);
+      color: var(--text);
+    }
+    .search-box button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 25px;
+      border-radius: 25px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .book-card {
+      background: var(--bg);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: transform 0.2s;
+    }
+    .book-card:hover {
+      transform: translateY(-3px);
+    }
+    .book-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      background: #e0d6c8;
+    }
+    .book-card .info {
+      padding: 12px;
+    }
+    .book-card .info h3 {
+      margin: 0 0 5px;
+      font-size: 1em;
+      color: var(--primary);
+    }
+    .book-card .info p {
+      margin: 0;
+      font-size: 0.85em;
+      color: var(--text-light);
+    }
+    .no-result {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-light);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link">← Back to Feed</a>
+    <h1>🔍 Discover Books</h1>
+    <div class="search-box">
+      <input type="text" id="discover-query" placeholder="Search any book from Google Books..." />
+      <button onclick="searchBooks()">Search</button>
+    </div>
+    <div class="results-grid" id="results"></div>
+  </div>
+
+  <script>
+    async function searchBooks() {
+      const query = document.getElementById('discover-query').value.trim();
+      if (!query) return;
+
+      document.getElementById('results').innerHTML = '<div class="no-result">Searching…</div>';
+
+      const res = await fetch(`/api/discover?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+
+      if (!data.items || data.items.length === 0) {
+        document.getElementById('results').innerHTML = '<div class="no-result">No books found. Try a different search.</div>';
+        return;
+      }
+
+      document.getElementById('results').innerHTML = data.items.map(book => {
+        const cover = book.imageLinks?.thumbnail || book.imageLinks?.smallThumbnail || null;
+        const authors = book.authors?.join(', ') || 'Unknown author';
+        return `
+          <div class="book-card">
+            ${cover ? `<img src="${cover}" alt="${escapeHTML(book.title)}" />` : '<div style="height:200px; display:flex; align-items:center; justify-content:center; background:#e0d6c8; color:#8b5e3c;">📖 No Cover</div>'}
+            <div class="info">
+              <h3>${escapeHTML(book.title)}</h3>
+              <p>${escapeHTML(authors)}</p>
+              ${book.publishedDate ? `<p>${book.publishedDate}</p>` : ''}
+              ${book.pageCount ? `<p>${book.pageCount} pages</p>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Allow pressing Enter to search
+    document.getElementById('discover-query').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') searchBooks();
+    });
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

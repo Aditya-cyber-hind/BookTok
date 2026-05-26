@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BookTok Awards</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+      color: var(--text);
+      margin: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 20px;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .page-title {
+      color: var(--primary);
+      font-size: 2.2em;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .page-subtitle {
+      color: var(--text-light);
+      margin-bottom: 25px;
+    }
+    .category-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 8px 20px;
+      border-radius: 25px;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      font-weight: 600;
+      background: var(--card-bg);
+      color: var(--text);
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .nomination-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .nomination-info h4 {
+      margin: 0 0 4px;
+      color: #5a3e28;
+    }
+    .nomination-info p {
+      margin: 0;
+      font-size: 0.85em;
+      color: var(--text-light);
+    }
+    .vote-btn {
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      background: var(--primary);
+      color: white;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .vote-btn:hover { background: var(--primary-hover); }
+    .vote-btn:disabled {
+      background: #ccc;
+      cursor: default;
+    }
+    .nominate-section {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .nominate-section input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .btn {
+      padding: 10px 24px;
+      border-radius: 25px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      background: var(--primary);
+      color: white;
+    }
+    .btn:hover { background: var(--primary-hover); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Feed
+    </a>
+    <h1 class="page-title">BookTok Awards</h1>
+    <p class="page-subtitle">Nominate, vote, and celebrate the best of our community.</p>
+
+    <div class="category-tabs" id="category-tabs"></div>
+    <div id="nominations-list"></div>
+
+    <div class="nominate-section" id="nominate-section">
+      <h3 style="color:#5a3e28;">Submit a Nomination</h3>
+      <p style="color:var(--text-light); font-size:0.9em;">For books: enter the Book ID. For reviewers: enter the Username.</p>
+      <input type="text" id="nominee-input" placeholder="Enter Book ID or Username...">
+      <button class="btn" onclick="submitNomination()">Submit Nomination</button>
+    </div>
+  </div>
+
+  <script>
+    let currentCategory = 'best_book';
+    let categories = [];
+
+    async function loadCategories() {
+      const res = await fetch('/api/awards/categories');
+      categories = await res.json();
+      const tabs = document.getElementById('category-tabs');
+      tabs.innerHTML = categories.map(c => `
+        <div class="tab ${c.key === currentCategory ? 'active' : ''}" onclick="switchCategory('${c.key}')">${c.label}</div>
+      `).join('');
+      loadNominations();
+    }
+
+    async function switchCategory(key) {
+      currentCategory = key;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`.tab[onclick="switchCategory('${key}')"]`)?.classList.add('active');
+      document.getElementById('nominee-input').value = '';
+      loadNominations();
+    }
+
+    async function loadNominations() {
+      const res = await fetch(`/api/awards/nominations/${currentCategory}`);
+      const nominations = await res.json();
+      const container = document.getElementById('nominations-list');
+      if (!nominations.length) {
+        container.innerHTML = '<p style="color:var(--text-light);">No nominations yet. Be the first!</p>';
+        return;
+      }
+      container.innerHTML = nominations.map(n => `
+        <div class="nomination-card">
+          <div class="nomination-info">
+            <h4>${escapeHTML(n.nomineeDetails?.name || 'Unknown')}</h4>
+            <p>${escapeHTML(n.nomineeDetails?.subtitle || '')} · ${n.vote_count} votes · nominated by ${escapeHTML(n.nominator_name)}</p>
+          </div>
+          <button class="vote-btn" onclick="castVote(${n.id})">Vote</button>
+        </div>
+      `).join('');
+    }
+
+    async function submitNomination() {
+      const input = document.getElementById('nominee-input').value.trim();
+      if (!input) return alert('Enter a Book ID or Username.');
+      
+      const cat = categories.find(c => c.key === currentCategory);
+      if (!cat) return;
+
+      let nomineeType = cat.type;
+      let nomineeId = null;
+
+      if (cat.type === 'user') {
+        // Look up user by username
+        const res = await fetch(`/api/search?q=${encodeURIComponent(input)}`);
+        const data = await res.json();
+        if (data.users && data.users.length > 0) {
+          nomineeId = data.users[0].id;
+        } else {
+          return alert('User not found.');
+        }
+      } else {
+        nomineeId = parseInt(input);
+        if (isNaN(nomineeId)) return alert('Invalid ID.');
+      }
+
+      const res = await fetch('/api/awards/nominate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category: currentCategory, nominee_type: nomineeType, nominee_id: nomineeId })
+      });
+      if (res.ok) {
+        document.getElementById('nominee-input').value = '';
+        loadNominations();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Nomination failed');
+      }
+    }
+
+    async function castVote(nominationId) {
+      const res = await fetch('/api/awards/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nominationId })
+      });
+      if (res.ok) {
+        loadNominations();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Already voted');
+      }
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    loadCategories();
+  </script>
+</body>
+</html>
