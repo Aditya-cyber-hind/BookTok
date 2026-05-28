@@ -88,12 +88,6 @@ BookTok is a complete social platform where readers connect, share reviews, writ
 
 ---
 
-## 📸 Screenshots
-
-> *Add screenshots of your app here!*
-
----
-
 ## 🏗️ Project Structure
 
 ```
