@@ -13,6 +13,8 @@ db.exec(`
     bio TEXT DEFAULT '',
     profile_pic TEXT DEFAULT NULL,
     favourite_genres TEXT DEFAULT '[]',
+    email TEXT UNIQUE,
+    phone TEXT UNIQUE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 

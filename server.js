@@ -181,7 +181,7 @@ app.use('/uploads', express.static('uploads'));
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/auth/google/callback"
+    callbackURL: "https://administrative-cassette-affairs-mixing.trycloudflare.com/auth/google/callback"
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
@@ -202,7 +202,7 @@ passport.deserializeUser((id, done) => {
 });
 app.use(passport.initialize());
 app.use(passport.session());
-app.get('/auth/google', passport.authenticate('google', { scope: ['profile'] }));
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), (req, res) => res.redirect('/'));
 app.get('/logout', (req, res, next) => { req.logout(err => { if(err) return next(err); res.redirect('/'); }); });
 
@@ -2353,6 +2353,76 @@ app.get('/api/shorts', (req, res) => {
     p.media_url = p.media ? `/uploads/${p.media}` : null;
   });
   res.json(posts);
+});
+// ─── FRIEND CHAT (Socket.io) ──────────────────────────
+const io = new Server(server);
+
+const onlineUsers = new Map();
+
+// Create a messages table without foreign key constraints
+db.exec(`
+  CREATE TABLE IF NOT EXISTS private_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_id INTEGER NOT NULL,
+    to_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  socket.on('user-online', (userId) => {
+    onlineUsers.set(userId, socket.id);
+    socket.userId = userId;
+  });
+
+  socket.on('private-message', ({ to, message }) => {
+    const from = socket.userId;
+    if (!from) return;
+    
+    const friendSocket = onlineUsers.get(to);
+    
+    db.prepare('INSERT INTO private_messages (from_id, to_id, content) VALUES (?, ?, ?)').run(from, to, message);
+    
+    if (friendSocket) {
+      io.to(friendSocket).emit('private-message', {
+        from,
+        message,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    socket.emit('private-message', {
+      from,
+      message,
+      timestamp: new Date().toISOString(),
+      own: true
+    });
+  });
+
+  socket.on('disconnect', () => {
+    if (socket.userId) {
+      onlineUsers.delete(socket.userId);
+    }
+  });
+});
+
+// Get chat history with a friend
+app.get('/api/chat/:friendId', (req, res) => {
+  const userId = getCurrentUserId(req);
+  if (!userId) return res.status(401).json({ error: 'Not logged in' });
+  const friendId = parseInt(req.params.friendId);
+  
+  const messages = db.prepare(`
+    SELECT * FROM private_messages 
+    WHERE (from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?)
+    ORDER BY sent_at ASC
+    LIMIT 50
+  `).all(userId, friendId, friendId, userId);
+  
+  res.json(messages);
 });
 // ─── START ──────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;

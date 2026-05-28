@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="animations.css">
+  <script src="animations.js"></script>
+  <script src="pull-refresh.js"></script>
+  <link rel="stylesheet" href="mobile-nav.css">
+  <style>
+    /* ── Warm Themed Header & Nav, Dark‑Mode Ready ── */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 12px 25px;
+      background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 70%, black));
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      border-radius: 0 0 20px 20px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    .logo-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #f9f7f2;
+    }
+    .logo-text {
+      font-size: 1.6em;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: white;
+    }
+    .header-search {
+      flex: 1;
+      max-width: 400px;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .header-search input {
+      width: 100%;
+      padding: 10px 18px 10px 38px;
+      border-radius: 30px;
+      border: none;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      font-size: 0.9em;
+      backdrop-filter: blur(4px);
+      transition: background 0.3s;
+    }
+    .header-search input::placeholder { color: rgba(255,255,255,0.7); }
+    .header-search input:focus { background: rgba(255,255,255,0.3); outline: none; }
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      color: rgba(255,255,255,0.7);
+      pointer-events: none;
+    }
+    .search-results-dropdown {
+      position: absolute;
+      top: 44px;
+      left: 0;
+      right: 0;
+      background: var(--card-bg);
+      color: var(--text);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      display: none;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 200;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .lico-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #f1c40f;
+      color: #3a2c1b;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.9em;
+    }
+    .piggy-icon { font-size: 1.3em; transition: transform 0.2s; color: inherit; }
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255,255,255,0.2);
+      padding: 4px 14px 4px 4px;
+      border-radius: 24px;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9em;
+      backdrop-filter: blur(4px);
+      transition: background 0.3s;
+    }
+    .user-pill:hover { background: rgba(255,255,255,0.35); }
+    .user-pill img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #f9f7f2; }
+    .icon-bell { position: relative; cursor: pointer; display: flex; align-items: center; }
+    .badge {
+      position: absolute;
+      top: -6px;
+      right: -8px;
+      background: var(--danger);
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      display: none;
+    }
+    .notif-dropdown {
+      display: none;
+      position: absolute;
+      top: 30px;
+      right: 0;
+      width: 300px;
+      background: var(--card-bg);
+      color: var(--text);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      z-index: 200;
+      max-height: 360px;
+      overflow-y: auto;
+      padding: 5px 0;
+    }
+    .icon-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.3s;
+      color: white;
+    }
+    .icon-btn:hover { background: rgba(255,255,255,0.35); }
+    .logout-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.85em;
+      cursor: pointer;
+      transition: background 0.3s;
+      backdrop-filter: blur(4px);
+    }
+    .logout-btn:hover { background: rgba(255,255,255,0.35); }
+
+    /* Navigation Bar */
+    .nav-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 25px 15px;
+      justify-content: center;
+    }
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 30px;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9em;
+      background: var(--primary);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .nav-link:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+    #app-container { padding: 0 25px; }
+
+    /* Floating Post Button */
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--primary);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+      z-index: 99;
+      transition: transform 0.2s;
+    }
+    .fab:hover { transform: scale(1.1); }
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .modal-content textarea, .modal-content input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .btn {
+      padding: 8px 20px;
+      border-radius: 25px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      background: var(--primary);
+      color: white;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+  </style>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M20 15h40v70H20a15 15 0 1 1 0-70z' fill='%238b5e3c'/%3E%3Cpath d='M60 15h20v70H60z' fill='%23a47148'/%3E%3Cpath d='M45 25L55 45 45 65' fill='none' stroke='%23f9f7f2' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body>
+  <!-- Auth section (login / sign up) -->
+  <div id="auth-section">
+    <h1>📚 BookTok</h1>
+    <div id="login-box">
+      <h2>Login</h2>
+      <input type="text" id="login-username" placeholder="Username" />
+      <input type="email" id="signup-email" placeholder="Email (optional)" />
+      <input type="password" id="login-password" placeholder="Password" />
+      <button onclick="login()">Log In</button>
+      <p>No account? <a href="#" onclick="showSignUp()">Sign up here</a></p>
+      <a href="/auth/google" style="display:block; margin-top:10px;">
+        <button type="button" style="background:#4285F4; color:white; width:100%; border:none; padding:8px; border-radius:6px; cursor:pointer;">Login with Google</button>
+      </a>
+    </div>
+
+    <div id="signup-box" style="display:none;">
+      <h2>Sign Up</h2>
+      <input type="text" id="signup-username" placeholder="Username" />
+      <input type="password" id="signup-password" placeholder="Password" />
+      <input type="number" id="signup-birthyear" placeholder="Birth year (e.g., 2010)" min="1920" max="2025" />
+      <p>Favourite genres (comma separated):</p>
+      <input type="text" id="signup-genres" placeholder="Fantasy, Sci‑Fi, Mystery..." />
+      <button onclick="signup()">Sign Up</button>
+      <p>Already have an account? <a href="#" onclick="showLogin()">Log in</a></p>
+    </div>
+  </div>
+
+  <!-- Main app (after login) -->
+  <div id="main-section" style="display:none;">
+    <header class="app-header">
+      <div class="header-left">
+        <a href="/" class="logo-link">
+          <svg width="38" height="34" viewBox="0 0 48 42">
+            <path d="M0,6 L18,0 L18,32 L0,38 Z" fill="#f9f7f2" />
+            <path d="M18,0 L36,6 L36,38 L18,32 Z" fill="#d4a373" />
+            <polygon points="16,14 16,26 23,20" fill="#8b5e3c" />
+            <rect x="17" y="0" width="2" height="32" fill="#5a3e28" opacity="0.6" />
+          </svg>
+          <span class="logo-text">BookTok</span>
+        </a>
+      </div>
+
+      <div class="header-search">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search-input" placeholder="Search users, books, or tags…" autocomplete="off">
+        <div id="search-results" class="search-results-dropdown"></div>
+      </div>
+
+      <div class="header-right">
+        <div id="lico-balance" class="lico-badge">
+          <span id="piggy-bank" class="piggy-icon">🐷</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+          <span id="lico-amount">0</span>
+        </div>
+
+        <a id="user-pill" href="#" class="user-pill">
+          <img id="user-pill-img" src="" alt="avatar">
+          <span id="user-pill-name"></span>
+        </a>
+
+        <div id="notification-bell" class="icon-bell" onclick="toggleNotifications()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span id="notif-count" class="badge">0</span>
+          <div id="notif-dropdown" class="notif-dropdown"></div>
+        </div>
+
+        <button onclick="logout()" class="logout-btn">Logout</button>
+      </div>
+    </header>
+
+    <!-- Desktop Navigation bar -->
+    <nav class="nav-bar">
+      <a href="shorts.html" class="nav-link" style="background:#e74c3c;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Shorts
+      </a>
+      <a href="post.html" class="nav-link" style="background:#e67e22;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Post
+      </a>
+      <a href="chat.html" class="nav-link" style="background:#2ecc71;">
+  💬 Chat with your friends!
+</a>
+      <a href="because.html" class="nav-link" style="background:#3498db;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2 1.5-3.5A6 6 0 0 0 6 8c0 1 .4 2.1 1 3 1 1.3 1.7 2.2 2 3.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+        Because
+      </a>
+      <a href="your_info.html" class="nav-link" style="background:#9b59b6;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Your Info
+      </a>
+      <a href="ai-chat.html" class="nav-link" style="background:#6b8e23; animation: glow 2s infinite;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        Libby
+      </a>
+      <a href="trending.html" class="nav-link" style="background:#d4a373;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2 1.5-3.5 0-2.8-2.2-5-5-5-1.4 0-2.8.4-3.8 1.2C7.8 5.4 6 8 6 11c0 3.5 2.3 6.4 5.5 7.5"/><polygon points="10,22 8,12 14,18 12,10 16,12 14,8"/></svg>
+        Trending
+      </a>
+      <a href="challenges.html" class="nav-link" style="background:#d4a373;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/><path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47 1-1 1H7c-.55 0-1-.45-1-1v-2.34"/><path d="M14 14.66V17c0 .55.47 1 1 1h2c.55 0 1-.45 1-1v-2.34"/><path d="M8 2h8v7a4 4 0 1 1-8 0V2z"/></svg>
+        Challenges
+      </a>
+      <a href="awards.html" class="nav-link" style="background:#f39c12;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/><path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47 1-1 1H7c-.55 0-1-.45-1-1v-2.34"/></svg>
+        Awards
+      </a>
+      <a href="books.html" class="nav-link" style="background:#b08968;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+        Books
+      </a>
+      <a href="discover.html" class="nav-link" style="background:#6d4c41;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Discover
+      </a>
+      <a href="activities.html" class="nav-link" style="background:#8b5e3c;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
+        Activities
+      </a>
+    </nav>
+
+    <div id="app-container">
+      <div id="feed-panel">
+        <div style="margin-bottom:10px;">
+          <button class="feed-tab active" onclick="switchFeed('global')">Global</button>
+          <button class="feed-tab" onclick="switchFeed('foryou')">For You</button>
+          <button class="feed-tab" onclick="switchFeed('friends')">Friends</button>
+        </div>
+        <h2 id="feed-title">Global Feed</h2>
+
+        <div id="daily-pick-banner" style="margin-bottom:15px; padding:10px; background: var(--accent); color: #3a2c1b; border-radius:8px; display:none;">
+          <strong>Libby's Pick of the Day</strong>
+          <p id="daily-pick-text" style="margin:5px 0 0;"></p>
+          <small id="daily-pick-book"></small>
+        </div>
+
+        <div id="feed-posts"></div>
+      </div>
+
+      <!-- Floating Post Button (inside main section) -->
+      <button class="fab" onclick="openPostModal()" title="Create a post">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+
+      <!-- Post Modal -->
+      <div class="modal-overlay" id="post-modal">
+        <div class="modal-content" style="max-width:500px;">
+          <h3>Create Post</h3>
+          <textarea id="post-content" rows="4" placeholder="What's on your reading mind?"></textarea>
+          <input type="text" id="post-tags" placeholder="Tags (comma separated)">
+          <input type="file" id="post-media" accept="image/*,video/*">
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="btn" onclick="publishPost()">Post</button>
+            <button class="btn btn-secondary" onclick="closePostModal()">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="right-panel">
+        <div id="recommendations">
+          <h2>Recommended for you</h2>
+          <div id="rec-books"></div>
+        </div>
+        <div id="friends-section">
+          <h2>Friends</h2>
+          <div id="friends-list"></div>
+          <h3>Friend Requests</h3>
+          <div id="friend-requests"></div>
+          <h3>Add a friend</h3>
+          <input type="text" id="friend-username" placeholder="Enter username" />
+          <button onclick="sendFriendRequest()">Send Request</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-bottom-nav">
+    <a href="/" class="active">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span>Feed</span>
+    </a>
+    <a href="shorts.html">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      <span>Shorts</span>
+    </a>
+    <a href="books.html">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+      <span>Books</span>
+    </a>
+    <a href="profile.html?id=me">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Profile</span>
+    </a>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>                                
