@@ -11,7 +11,7 @@
 
 ## ✨ What is BookTok?
 
-BookTok is a complete social platform where readers connect, share reviews, write stories with AI, compete in reading challenges, and discover their next favorite book — all in one place.
+BookTok is a complete social platform where readers connect, share reviews, write stories with AI, compete in reading challenges, play book-themed games, and discover their next favorite book — all in one place.
 
 ---
 
@@ -26,13 +26,13 @@ BookTok is a complete social platform where readers connect, share reviews, writ
 - **Stories** — Instagram-style status updates (24hr expiry)
 
 ### 💬 Communication
-- **Real-time Chat** — Private messaging with Socket.io
+- **Real-time Chat** — Private messaging with Socket.io, message timestamps, and profile pictures
 - **Notifications** — Live alerts for likes, comments, and friend requests
 - **Friend System** — Send requests, accept, block, and report users
 
 ### 🤖 AI-Powered
 - **Libby AI Chat** — Talk to your personal librarian (Groq-powered)
-- **Writo Studio** — Write stories with an AI co-writer
+- **Writo Studio** — Write stories with an AI co-writer and cover generator
 - **Character Chat** — Chat with 40+ literary characters (Sherlock, Gandalf, etc.)
 - **Character Lookalike** — Upload a photo, find your book character twin
 - **BookMate** — AI reading soulmate finder
@@ -45,10 +45,14 @@ BookTok is a complete social platform where readers connect, share reviews, writ
 - **Reviews & Ratings** — Write reviews, rate books 1-5 stars
 - **Google Books API** — Discover millions of books
 
+### 🎮 Games
+- **Guess the Book** — AI gives cryptic hints, you guess the title in 15 tries. Win badges and confetti!
+- **Character Lookalike** — Upload a selfie, find your literary twin
+
 ### 🏆 Gamification
 - **Challenges** — 30+ reading challenges with badges
-- **Badges** — Earn achievements for reading, reviewing, and posting
-- **LiCo Economy** — Virtual currency for tipping and upgrades
+- **Badges** — Earn achievements for reading, reviewing, posting, and winning games
+- **LiCo Economy** — Virtual currency for tipping, upgrades, and premium features
 - **Reader Clusters** — Discover your reading personality
 - **BookTok Awards** — Nominate and vote for community favorites
 - **Streaks** — Daily writing goals with streak tracking
@@ -89,20 +93,20 @@ BookTok is a complete social platform where readers connect, share reviews, writ
 ---
 
 ## 🏗️ Project Structure
-
 ```
 BookTok/
-├── server.js          # Main backend (1 file, 2000+ lines)
+├── server.js # Main backend (1 file, 2500+ lines)
 ├── database/
-│   └── setup.js       # SQLite schema & seed data
+│ └── setup.js # SQLite schema & seed data
 ├── public/
-│   ├── index.html     # Main feed
-│   ├── chat.html      # Real-time messaging
-│   ├── writo.html     # AI writing studio
-│   ├── shorts.html    # Video shorts feed
-│   ├── profile.html   # User profiles
-│   ├── book.html      # Book details
-│   └── ...20+ more files
+│ ├── index.html # Main feed
+│ ├── chat.html # Real-time messaging
+│ ├── writo.html # AI writing studio
+│ ├── shorts.html # Video shorts feed
+│ ├── profile.html # User profiles
+│ ├── book.html # Book details
+│ ├── guess-book.html # AI guessing game
+│ └── ...20+ more files
 └── package.json
 ```
 
@@ -125,8 +129,6 @@ npm install
 node server.js
 
 # Open http://localhost:3000
-```
-
 ---
 
 ## 🧠 Built By
