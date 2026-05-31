@@ -483,46 +483,144 @@ app.get('/api/feed/global', (req, res) => {
 app.get('/api/feed/for-you', (req, res) => {
   const userId = getCurrentUserId(req);
   if (!userId) return res.status(401).json({ error: 'Not logged in' });
-  const likedPosts = db.prepare('SELECT p.tags FROM likes l JOIN posts p ON l.post_id = p.id WHERE l.user_id = ? ORDER BY p.created_at DESC LIMIT 50').all(userId);
-  const userTagScores = new Map();
+  
+  // ==========================================
+  // 📊 SIGNAL 1: Tag Affinity (30% weight)
+  // ==========================================
+  const likedPosts = db.prepare(`
+    SELECT p.tags FROM likes l 
+    JOIN posts p ON l.post_id = p.id 
+    WHERE l.user_id = ? 
+    ORDER BY p.created_at DESC LIMIT 50
+  `).all(userId);
+  
+  const tagScores = new Map();
   likedPosts.forEach(p => {
     let tags = [];
     try { tags = JSON.parse(p.tags); } catch(e) {
       if (typeof p.tags === 'string' && p.tags.trim().length > 0) tags = p.tags.split(',').map(t => t.trim());
     }
-    (tags||[]).forEach(tag => userTagScores.set(tag, (userTagScores.get(tag)||0)+1));
+    tags.forEach(tag => tagScores.set(tag, (tagScores.get(tag) || 0) + 1));
   });
-  if (userTagScores.size === 0) return res.json([]);
+  
+  // ==========================================
+  // 📚 SIGNAL 2: Genre Affinity (25% weight)
+  // ==========================================
+  const userGenres = db.prepare(`
+    SELECT b.genre, COUNT(*) as cnt FROM reading_list r
+    JOIN books b ON r.book_id = b.id
+    WHERE r.user_id = ? AND r.status = 'finished'
+    GROUP BY b.genre ORDER BY cnt DESC LIMIT 5
+  `).all(userId);
+  
+  const genreScores = new Map();
+  userGenres.forEach(g => genreScores.set(g.genre, g.cnt));
+  
+  // ==========================================
+  // 👥 SIGNAL 3: Friend Activity (20% weight)
+  // ==========================================
+  const friends = db.prepare('SELECT friend_id FROM friendships WHERE user_id = ?').all(userId).map(f => f.friend_id);
+  const friendPosts = new Map();
+  if (friends.length > 0) {
+    const friendActivity = db.prepare(`
+      SELECT p.id, p.author_id FROM posts p 
+      WHERE p.author_id IN (${friends.map(() => '?').join(',')}) 
+      AND p.created_at > datetime('now', '-3 days')
+    `).all(...friends);
+    friendActivity.forEach(p => friendPosts.set(p.id, 1));
+  }
+  
+  // ==========================================
+  // 🚫 BLOCK FILTER
+  // ==========================================
   const blocked = getBlockedUserIds(userId);
-  let query = `SELECT p.id, p.author_id, p.content, p.tags, p.media, p.type, p.quote_text, p.quote_author, p.quote_book_title, p.created_at, u.username,
+  
+  // ==========================================
+  // 🔍 FETCH CANDIDATE POOL
+  // ==========================================
+  let query = `SELECT p.id, p.author_id, p.content, p.tags, p.media, p.type, 
+    p.quote_text, p.quote_author, p.quote_book_title, p.created_at, u.username,
     (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS like_count,
     COALESCE((SELECT total FROM post_tips WHERE post_id = p.id), 0) AS tips
     FROM posts p JOIN users u ON p.author_id = u.id
-    WHERE p.type != 'short' AND NOT EXISTS (SELECT 1 FROM likes WHERE post_id = p.id AND user_id = ?)`;
-  const params = [userId];
+    WHERE p.type != 'short' 
+    AND p.author_id != ?
+    AND p.id NOT IN (SELECT post_id FROM likes WHERE user_id = ?)`;
+  
+  const params = [userId, userId];
   if (blocked.length > 0) {
     query += ` AND p.author_id NOT IN (${blocked.map(() => '?').join(',')})`;
     params.push(...blocked);
   }
-  query += ' ORDER BY p.created_at DESC LIMIT 200';
-  let allPosts = db.prepare(query).all(...params);
-  const scored = allPosts.map(post => {
+  query += ' ORDER BY p.created_at DESC LIMIT 300';
+  
+  let candidates = db.prepare(query).all(...params);
+  
+  // ==========================================
+  // 🧮 COMPOSITE SCORING
+  // ==========================================
+  const scored = candidates.map(post => {
     let tags = [];
     try { tags = JSON.parse(post.tags); } catch(e) {}
-    let score = 0;
-    (tags||[]).forEach(tag => { if (userTagScores.has(tag)) score += userTagScores.get(tag); });
-    score += Math.log(post.like_count + 1);
-    return { ...post, score, tags };
+    
+    // Signal 1: Tag Match (30%)
+    let tagScore = 0;
+    tags.forEach(tag => { if (tagScores.has(tag)) tagScore += tagScores.get(tag); });
+    const maxTagScore = Math.max(...Array.from(tagScores.values()), 1);
+    const normalizedTag = Math.min(tagScore / maxTagScore, 1) * 0.30;
+    
+    // Signal 2: Genre Match (25%)
+    let genreScore = 0;
+    tags.forEach(tag => {
+      const lower = tag.toLowerCase();
+      genreScores.forEach((count, genre) => {
+        if (lower.includes(genre.toLowerCase()) || genre.toLowerCase().includes(lower)) {
+          genreScore += count;
+        }
+      });
+    });
+    const maxGenreScore = Math.max(...Array.from(genreScores.values()), 1);
+    const normalizedGenre = Math.min(genreScore / maxGenreScore, 1) * 0.25;
+    
+    // Signal 3: Friend Activity (20%)
+    const friendBoost = friendPosts.has(post.id) ? 0.20 : 0;
+    
+    // Signal 4: Recency (15%)
+    const hoursAgo = (Date.now() - new Date(post.created_at).getTime()) / (1000 * 60 * 60);
+    const recencyScore = Math.max(0, (72 - hoursAgo) / 72) * 0.15;
+    
+    // Signal 5: Quality - Community Engagement (10%)
+    const engagementRate = post.like_count > 0 ? Math.min(post.like_count / 10, 1) * 0.10 : 0;
+    
+    const totalScore = normalizedTag + normalizedGenre + friendBoost + recencyScore + engagementRate;
+    
+    return { ...post, score: Math.round(totalScore * 100) / 100, tags };
   });
-  scored.sort((a,b) => b.score - a.score);
-  const result = scored.slice(0,30);
+  
+  // ==========================================
+  // 🎯 RANK & RETURN
+  // ==========================================
+  scored.sort((a, b) => b.score - a.score);
+  
+  // Add some diversity - don't show more than 2 posts from same author in top 10
+  const seenAuthors = new Map();
+  const result = [];
+  for (const post of scored) {
+    const authorCount = seenAuthors.get(post.author_id) || 0;
+    if (authorCount < 2 || result.length > 20) {
+      result.push(post);
+      seenAuthors.set(post.author_id, authorCount + 1);
+    }
+    if (result.length >= 30) break;
+  }
+  
   result.forEach(p => {
     p.media_url = p.media ? `/uploads/${p.media}` : null;
     p.liked = false;
   });
+  
   res.json(result);
 });
-
 // ─── SEARCH ──────────────────────────────────────────────
 app.get('/api/search', (req, res) => {
   const q = `%${req.query.q || ''}%`;
@@ -2423,6 +2521,137 @@ app.get('/api/chat/:friendId', (req, res) => {
   `).all(userId, friendId, friendId, userId);
   
   res.json(messages);
+});
+// ─── GUESS THE BOOK GAME ──────────────────────────────
+const bookPool = [
+  { title: "Harry Potter and the Sorcerer's Stone", author: "J.K. Rowling" },
+  { title: "The Hobbit", author: "J.R.R. Tolkien" },
+  { title: "1984", author: "George Orwell" },
+  { title: "The Hunger Games", author: "Suzanne Collins" },
+  { title: "Percy Jackson: The Lightning Thief", author: "Rick Riordan" },
+  { title: "The Fault in Our Stars", author: "John Green" },
+  { title: "Ender's Game", author: "Orson Scott Card" },
+  { title: "The Book Thief", author: "Markus Zusak" },
+  { title: "Coraline", author: "Neil Gaiman" },
+  { title: "The Martian", author: "Andy Weir" },
+  { title: "Charlotte's Web", author: "E.B. White" },
+  { title: "The Diary of a Young Girl", author: "Anne Frank" },
+  { title: "Life of Pi", author: "Yann Martel" },
+  { title: "Treasure Island", author: "Robert Louis Stevenson" },
+  { title: "The Chronicles of Narnia", author: "C.S. Lewis" },
+  { title: "Divergent", author: "Veronica Roth" },
+  { title: "The Hitchhiker's Guide to the Galaxy", author: "Douglas Adams" },
+  { title: "Matilda", author: "Roald Dahl" },
+  { title: "A Wrinkle in Time", author: "Madeleine L'Engle" },
+  { title: "Hatchet", author: "Gary Paulsen" }
+];
+
+// Store active games in memory
+const activeGames = new Map();
+
+app.post('/api/game/guess-book/start', async (req, res) => {
+  const userId = getCurrentUserId(req);
+  if (!userId) return res.status(401).json({ error: 'Not logged in' });
+  
+  // Pick random book
+  const book = bookPool[Math.floor(Math.random() * bookPool.length)];
+  
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: 'You are a game host. Give ONE vague but intriguing hint (max 2 sentences) about a book. Do NOT mention the title or author. Make it fun and mysterious. Start with an emoji.' },
+          { role: 'user', content: `Give me the first hint for the book "${book.title}" by ${book.author}.` }
+        ],
+        temperature: 0.9,
+        max_tokens: 80
+      })
+    });
+    const data = await response.json();
+    const firstHint = data.choices?.[0]?.message?.content?.trim() || `📚 This book is a beloved classic by ${book.author}.`;
+    
+    activeGames.set(userId, { book, hintCount: 1, hints: [firstHint] });
+    
+    res.json({ 
+      success: true, 
+      firstHint,
+      bookTitle: book.title,
+      bookAuthor: book.author
+    });
+  } catch(e) {
+    const firstHint = `📚 This book is a well-known work by ${book.author}.`;
+    activeGames.set(userId, { book, hintCount: 1, hints: [firstHint] });
+    res.json({ success: true, firstHint, bookTitle: book.title, bookAuthor: book.author });
+  }
+});
+
+app.post('/api/game/guess-book/hint', async (req, res) => {
+  const userId = getCurrentUserId(req);
+  if (!userId) return res.status(401).json({ error: 'Not logged in' });
+  
+  const { book, author, previousHints } = req.body;
+  
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: 'You are a game host. Give ONE new hint (max 2 sentences) about a book. Make each hint progressively more revealing but still don\'t mention the title or author directly. Start with an emoji.' },
+          { role: 'user', content: `Previous hints given: ${previousHints.join(' | ')}\n\nGive the next hint for "${book}" by ${author}.` }
+        ],
+        temperature: 0.9,
+        max_tokens: 80
+      })
+    });
+    const data = await response.json();
+    const hint = data.choices?.[0]?.message?.content?.trim() || `📖 Think about books by ${author}...`;
+    
+    res.json({ hint });
+  } catch(e) {
+    res.json({ hint: `📖 This book is by ${author}. Think about their most famous works!` });
+  }
+});
+
+app.post('/api/game/guess-book/guess', (req, res) => {
+  const userId = getCurrentUserId(req);
+  if (!userId) return res.status(401).json({ error: 'Not logged in' });
+  
+  const { guess, bookTitle, bookAuthor, hintsUsed } = req.body;
+  
+  const guessLower = guess.toLowerCase().trim();
+  const titleLower = bookTitle.toLowerCase().trim();
+  
+  const isCorrect = guessLower === titleLower || 
+                    guessLower.includes(titleLower) || 
+                    titleLower.includes(guessLower);
+  
+  let badgeEarned = null;
+  
+  if (isCorrect) {
+    if (hintsUsed <= 3) badgeEarned = "Book Detective 🕵️";
+    else if (hintsUsed <= 7) badgeEarned = "Bookworm 📚";
+    else badgeEarned = "Page Turner 📖";
+    
+    // Award badge
+    const badgeExists = db.prepare('SELECT * FROM user_badges WHERE user_id = ? AND badge_name = ?').get(userId, badgeEarned);
+    if (!badgeExists) {
+      db.prepare('INSERT INTO user_badges (user_id, badge_name, badge_icon) VALUES (?, ?, ?)').run(userId, badgeEarned, '🎮');
+      awardLiCo(userId, 10, 'guess_book', null, `Won Guess the Book: ${bookTitle}`);
+    }
+  }
+  
+  res.json({ correct: isCorrect, badgeEarned: isCorrect ? badgeEarned : null });
 });
 // ─── START ──────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
