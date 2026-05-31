@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Bingo - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; color: var(--text); min-height: 100vh; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 20px; color: var(--primary); text-decoration: none; font-weight: 600; }
+    h1 { color: var(--primary); text-align: center; font-size: 2em; margin-bottom: 5px; }
+    .week-label { text-align: center; color: var(--text-light); margin-bottom: 20px; font-size: 0.9em; }
+    .bingo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: var(--card-bg); padding: 15px; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .bingo-cell { aspect-ratio: 1; border-radius: 12px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 0.8em; font-weight: 600; cursor: pointer; transition: all 0.2s; background: var(--bg); color: var(--text); }
+    .bingo-cell:hover { transform: scale(1.03); border-color: var(--primary); }
+    .bingo-cell.completed { background: #d4edda; border-color: #28a745; color: #155724; }
+    .bingo-cell.free { background: linear-gradient(135deg, #f1c40f, #f39c12); border-color: #f1c40f; color: #3a2c1b; cursor: default; font-size: 1em; }
+    .bingo-cell.bingo-row { animation: bingoGlow 1s ease infinite alternate; }
+    @keyframes bingoGlow { from { box-shadow: 0 0 8px rgba(241, 196, 15, 0.4); } to { box-shadow: 0 0 20px rgba(241, 196, 15, 0.8); } }
+    .stats { display: flex; justify-content: center; gap: 20px; margin: 20px 0; }
+    .stat { background: var(--card-bg); padding: 12px 20px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .stat-number { font-size: 1.8em; font-weight: 700; color: var(--primary); }
+    .stat-label { font-size: 0.75em; color: var(--text-light); }
+    .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
+    .confetti-piece { position: absolute; width: 12px; height: 12px; border-radius: 3px; animation: confettiFall 3s ease-out forwards; }
+    @keyframes confettiFall { 0% { transform: translateY(-100px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Feed
+    </a>
+    <h1>🎯 Book Bingo</h1>
+    <p class="week-label" id="week-label"></p>
+
+    <div class="bingo-grid" id="bingo-grid"></div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-number" id="rows-count">0</div>
+        <div class="stat-label">Bingos</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number" id="squares-count">0</div>
+        <div class="stat-label">Squares</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let bingoData = null;
+
+    function spawnConfetti() {
+      const container = document.createElement('div');
+      container.className = 'confetti-container';
+      document.body.appendChild(container);
+      const colors = ['#f1c40f', '#e74c3c', '#2ecc71', '#3498db', '#9b59b6', '#e67e22'];
+      for (let i = 0; i < 80; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = Math.random() * 0.5 + 's';
+        piece.style.animationDuration = (Math.random() * 2 + 2) + 's';
+        container.appendChild(piece);
+      }
+      setTimeout(() => container.remove(), 3500);
+    }
+
+    async function loadBingo() {
+      const res = await fetch('/api/bingo/card');
+      if (!res.ok) { window.location.href = 'index.html'; return; }
+      bingoData = await res.json();
+      
+      document.getElementById('week-label').textContent = `Week of ${new Date(bingoData.week_start).toLocaleDateString()}`;
+      document.getElementById('rows-count').textContent = bingoData.rows_completed;
+      document.getElementById('squares-count').textContent = bingoData.completed_squares.length;
+      
+      const grid = document.getElementById('bingo-grid');
+      grid.innerHTML = '';
+      
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          const cell = document.createElement('div');
+          const isFree = bingoData.card_data[r][c] === "⭐ FREE SPACE";
+          const squareKey = `${r}-${c}`;
+          const isCompleted = bingoData.completed_squares.includes(squareKey);
+          
+          cell.className = 'bingo-cell';
+          if (isFree) cell.className += ' free';
+          if (isCompleted) cell.className += ' completed';
+          
+          cell.textContent = bingoData.card_data[r][c];
+          
+          if (!isFree && !isCompleted) {
+            cell.onclick = () => completeSquare(r, c);
+          }
+          
+          grid.appendChild(cell);
+        }
+      }
+    }
+
+    async function completeSquare(row, col) {
+      const res = await fetch('/api/bingo/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ row, col })
+      });
+      const data = await res.json();
+      
+      if (data.rowCompleted || data.isFullCard) {
+        spawnConfetti();
+        if (data.badgeEarned) {
+          setTimeout(() => alert(`🏅 Badge earned: ${data.badgeEarned}!`), 500);
+        }
+      }
+      
+      loadBingo();
+    }
+
+    loadBingo();
+  </script>
+</body>
+</html>

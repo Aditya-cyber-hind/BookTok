@@ -63,6 +63,21 @@ try { db.exec('ALTER TABLE users ADD COLUMN email TEXT UNIQUE'); } catch(e){}
 try { db.exec('ALTER TABLE users ADD COLUMN phone TEXT UNIQUE'); } catch(e){}
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS bingo_cards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    week_start TEXT NOT NULL,
+    card_data TEXT NOT NULL,
+    completed_squares TEXT DEFAULT '[]',
+    rows_completed INTEGER DEFAULT 0,
+    is_full_card INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE(user_id, week_start)
+  );
+`);
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS award_nominations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -2652,6 +2667,148 @@ app.post('/api/game/guess-book/guess', (req, res) => {
   }
   
   res.json({ correct: isCorrect, badgeEarned: isCorrect ? badgeEarned : null });
+});
+// ─── BOOK BINGO ──────────────────────────────────────
+
+const bingoChallenges = [
+  "📖 Read a fantasy book",
+  "🌙 Read before bed",
+  "📚 Read 50 pages in one day",
+  "🎧 Listen to an audiobook",
+  "🏠 Read a book set in your country",
+  "🕰️ Read a book published before 2000",
+  "🌈 Read a book with a colorful cover",
+  "👨‍👩‍👧 Read a book about family",
+  "🔍 Read a mystery book",
+  "💕 Read a romance book",
+  "🚀 Read a sci-fi book",
+  "👻 Read a horror book",
+  "📝 Write a review",
+  "⭐ Rate a book 5 stars",
+  "📖 Read outside",
+  "🔄 Re-read a favorite book",
+  "🎬 Read a book that became a movie",
+  "📕 Read a book under 200 pages",
+  "📗 Read a book over 400 pages",
+  "🧙 Read a book with magic",
+  "🐉 Read a book with dragons",
+  "🏆 Finish a reading challenge",
+  "📱 Read an e-book",
+  "📚 Borrow a book from a friend"
+];
+
+function getWeekStart() {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(now.setDate(diff));
+  return monday.toISOString().split('T')[0];
+}
+
+function generateBingoCard() {
+  const shuffled = [...bingoChallenges].sort(() => Math.random() - 0.5);
+  const card = [];
+  for (let i = 0; i < 4; i++) {
+    card.push(shuffled.slice(i * 4, (i + 1) * 4));
+  }
+  // Make center a FREE space
+  card[1][1] = "⭐ FREE SPACE";
+  return card;
+}
+
+// Get or create user's bingo card for this week
+app.get('/api/bingo/card', (req, res) => {
+  const userId = getCurrentUserId(req);
+  if (!userId) return res.status(401).json({ error: 'Not logged in' });
+  
+  const weekStart = getWeekStart();
+  let card = db.prepare('SELECT * FROM bingo_cards WHERE user_id = ? AND week_start = ?').get(userId, weekStart);
+  
+  if (!card) {
+    const cardData = generateBingoCard();
+    db.prepare('INSERT INTO bingo_cards (user_id, week_start, card_data) VALUES (?, ?, ?)').run(userId, weekStart, JSON.stringify(cardData));
+    card = db.prepare('SELECT * FROM bingo_cards WHERE user_id = ? AND week_start = ?').get(userId, weekStart);
+  }
+  
+  card.card_data = JSON.parse(card.card_data);
+  card.completed_squares = JSON.parse(card.completed_squares || '[]');
+  
+  res.json(card);
+});
+
+// Mark a square as complete
+app.post('/api/bingo/complete', (req, res) => {
+  const userId = getCurrentUserId(req);
+  if (!userId) return res.status(401).json({ error: 'Not logged in' });
+  
+  const { row, col } = req.body;
+  const weekStart = getWeekStart();
+  
+  let card = db.prepare('SELECT * FROM bingo_cards WHERE user_id = ? AND week_start = ?').get(userId, weekStart);
+  if (!card) return res.status(404).json({ error: 'No bingo card found' });
+  
+  const completed = JSON.parse(card.completed_squares || '[]');
+  const squareKey = `${row}-${col}`;
+  
+  if (completed.includes(squareKey)) return res.status(400).json({ error: 'Already completed' });
+  
+  completed.push(squareKey);
+  
+  // Check for completed rows, columns, diagonals
+  const cardData = JSON.parse(card.card_data);
+  let newRowCompleted = false;
+  
+  // Check row
+  const rowComplete = [0,1,2,3].every(c => completed.includes(`${row}-${c}`) || cardData[row][c] === "⭐ FREE SPACE");
+  if (rowComplete) newRowCompleted = true;
+  
+  // Check column
+  const colComplete = [0,1,2,3].every(r => completed.includes(`${r}-${col}`) || cardData[r][col] === "⭐ FREE SPACE");
+  if (colComplete) newRowCompleted = true;
+  
+  // Check diagonals
+  const diag1 = row === col && [0,1,2,3].every(i => completed.includes(`${i}-${i}`) || cardData[i][i] === "⭐ FREE SPACE");
+  const diag2 = row + col === 3 && [0,1,2,3].every(i => completed.includes(`${i}-${3-i}`) || cardData[i][3-i] === "⭐ FREE SPACE");
+  if (diag1 || diag2) newRowCompleted = true;
+  
+  let rowsCompleted = card.rows_completed;
+  if (newRowCompleted) rowsCompleted++;
+  
+  // Check full card
+  const totalSquares = 16;
+  const freeSpace = 1;
+  const isFullCard = completed.length >= (totalSquares - freeSpace);
+  
+  db.prepare('UPDATE bingo_cards SET completed_squares = ?, rows_completed = ?, is_full_card = ? WHERE id = ?')
+    .run(JSON.stringify(completed), rowsCompleted, isFullCard ? 1 : 0, card.id);
+  
+  let badgeEarned = null;
+  
+  if (newRowCompleted) {
+    awardLiCo(userId, 15, 'bingo_row', null, 'Bingo row completed!');
+    badgeEarned = "Bingo! 🎯";
+    const badgeExists = db.prepare('SELECT * FROM user_badges WHERE user_id = ? AND badge_name = ?').get(userId, badgeEarned);
+    if (!badgeExists) {
+      db.prepare('INSERT INTO user_badges (user_id, badge_name, badge_icon) VALUES (?, ?, ?)').run(userId, badgeEarned, '🎯');
+    }
+  }
+  
+  if (isFullCard) {
+    awardLiCo(userId, 50, 'bingo_full', null, 'Full bingo card!');
+    badgeEarned = "Bingo Master 🏆";
+    const badgeExists = db.prepare('SELECT * FROM user_badges WHERE user_id = ? AND badge_name = ?').get(userId, badgeEarned);
+    if (!badgeExists) {
+      db.prepare('INSERT INTO user_badges (user_id, badge_name, badge_icon) VALUES (?, ?, ?)').run(userId, badgeEarned, '🏆');
+    }
+  }
+  
+  res.json({ 
+    success: true, 
+    rowCompleted: newRowCompleted,
+    isFullCard: !!isFullCard,
+    rowsCompleted,
+    badgeEarned
+  });
 });
 // ─── START ──────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
