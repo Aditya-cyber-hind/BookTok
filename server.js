@@ -196,7 +196,7 @@ app.use('/uploads', express.static('uploads'));
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "https://administrative-cassette-affairs-mixing.trycloudflare.com/auth/google/callback"
+    callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/auth/google/callback"
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
@@ -2515,6 +2515,22 @@ io.on('connection', (socket) => {
     });
   });
 
+   // Community chat
+socket.on('join-community', (communityId) => {
+    socket.join(communityId);
+    socket.currentCommunity = communityId;
+});
+
+socket.on('leave-community', () => {
+    if (socket.currentCommunity) {
+        socket.leave(socket.currentCommunity);
+    }
+});
+
+socket.on('community-message', (msg) => {
+    io.to(msg.community).emit('community-message', msg);
+});
+
   socket.on('disconnect', () => {
     if (socket.userId) {
       onlineUsers.delete(socket.userId);
@@ -2809,6 +2825,68 @@ app.post('/api/bingo/complete', (req, res) => {
     rowsCompleted,
     badgeEarned
   });
+});
+// ─── BOOK COMMUNITY CHAT ──────────────────────────────
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS community_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    community TEXT NOT NULL,
+    content TEXT NOT NULL,
+    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+`);
+
+// Communities list
+const communities = [
+  { id: "fantasy", name: "Fantasy Readers", emoji: "🧙", desc: "Discuss magic, dragons, and epic quests" },
+  { id: "scifi", name: "Sci-Fi Explorers", emoji: "🚀", desc: "Spaceships, aliens, and future worlds" },
+  { id: "romance", name: "Romance Lovers", emoji: "💕", desc: "Love stories and happy endings" },
+  { id: "mystery", name: "Mystery Solvers", emoji: "🔍", desc: "Whodunits and thrilling investigations" },
+  { id: "horror", name: "Horror Fans", emoji: "👻", desc: "Thrills, chills, and spooky reads" },
+  { id: "classics", name: "Classics Club", emoji: "📜", desc: "Timeless literature discussions" },
+  { id: "general", name: "BookTok General", emoji: "📚", desc: "All things books!" }
+];
+
+// Get communities list
+app.get('/api/communities', (req, res) => {
+  res.json(communities);
+});
+
+// Get messages for a community
+app.get('/api/communities/:id/messages', (req, res) => {
+  const messages = db.prepare(`
+    SELECT cm.*, u.username 
+    FROM community_messages cm 
+    JOIN users u ON cm.user_id = u.id 
+    WHERE cm.community = ? 
+    ORDER BY cm.sent_at DESC 
+    LIMIT 50
+  `).all(req.params.id);
+  res.json(messages.reverse());
+});
+
+// Post a message to a community
+app.post('/api/communities/:id/messages', (req, res) => {
+  const userId = getCurrentUserId(req);
+  if (!userId) return res.status(401).json({ error: 'Not logged in' });
+  
+  const { content } = req.body;
+  if (!content || !content.trim()) return res.status(400).json({ error: 'Message required' });
+  
+  const result = db.prepare('INSERT INTO community_messages (user_id, community, content) VALUES (?, ?, ?)')
+    .run(userId, req.params.id, content.trim());
+  
+  const message = db.prepare(`
+    SELECT cm.*, u.username 
+    FROM community_messages cm 
+    JOIN users u ON cm.user_id = u.id 
+    WHERE cm.id = ?
+  `).get(result.lastInsertRowid);
+  
+  res.json(message);
 });
 // ─── START ──────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;

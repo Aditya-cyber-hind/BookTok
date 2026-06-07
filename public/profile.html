@@ -325,6 +325,14 @@
         document.getElementById('settings-menu-container').style.display = isOwner ? 'block' : 'none';
         document.getElementById('status-section').style.display = isOwner ? 'flex' : 'none';
 
+        // Fix click behavior
+const statusSection = document.getElementById('status-section');
+if (isOwner) {
+  statusSection.onclick = openStatusModal;
+} else {
+  statusSection.onclick = openStoryViewerForUser;
+}
+
         let profilePicHTML = '';
         if (data.avatar_seed) {
           const style = data.avatar_style || 'adventurer';
