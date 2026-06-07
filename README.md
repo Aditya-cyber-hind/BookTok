@@ -11,68 +11,73 @@
 
 ## ✨ What is BookTok?
 
-BookTok is a complete social platform where readers connect, share reviews, write stories with AI, compete in reading challenges, play book-themed games, and discover their next favorite book — all in one place.
+BookTok is a complete social platform where readers connect, share reviews, write stories with AI, compete in reading challenges, play book-themed games, chat in genre communities, and discover their next favorite book — all in one place.
 
 ---
 
 ## 🚀 Features
 
 ### 📱 Social
-- **Feed** — Global, Friends, and AI-powered "For You"
+- **Feed** — Global, Friends, and AI-powered "For You" with smart 5-signal algorithm
 - **Posts** — Text, quotes, images, and video uploads
-- **Shorts** — TikTok-style vertical video feed
+- **Shorts** — TikTok-style vertical video feed with auto-play
 - **Comments** — Nested replies with real-time updates
 - **Likes & Tips** — Appreciate posts with ❤️ or LiCo coins
 - **Stories** — Instagram-style status updates (24hr expiry)
 
 ### 💬 Communication
-- **Real-time Chat** — Private messaging with Socket.io, message timestamps, and profile pictures
-- **Notifications** — Live alerts for likes, comments, and friend requests
+- **Private Chat** — Real-time messaging with Socket.io, timestamps, and profile pictures
+- **Book Communities** — Genre-based group chat rooms (Fantasy, Sci-Fi, Romance, Mystery, Horror, Classics, General)
+- **Notifications** — Live alerts for likes, comments, friend requests, and tips
 - **Friend System** — Send requests, accept, block, and report users
 
 ### 🤖 AI-Powered
-- **Libby AI Chat** — Talk to your personal librarian (Groq-powered)
-- **Writo Studio** — Write stories with an AI co-writer and cover generator
-- **Character Chat** — Chat with 40+ literary characters (Sherlock, Gandalf, etc.)
-- **Character Lookalike** — Upload a photo, find your book character twin
-- **BookMate** — AI reading soulmate finder
-- **Cover Generator** — AI-generated book covers (Gemini)
+- **Libby AI Chat** — Talk to your personal librarian with upgradeable AI (Groq-powered)
+- **Writo Studio** — Write stories with an AI co-writer, rich text editor, and cover generator
+- **Character Chat** — Chat with 40+ literary characters (Sherlock, Gandalf, Hermione, Dracula, etc.)
+- **Character Lookalike** — Upload a photo, find your book character twin (Llama 4 Scout)
+- **BookMate** — AI reading soulmate finder based on shared books and genres
+- **Cover Generator** — AI-generated book covers (Google Gemini)
 
 ### 📖 Reading
-- **Books Library** — Browse, preview, and read full texts
-- **Reading Timer** — Track your reading sessions
-- **Reading List** — Want to Read / Currently Reading / Finished
+- **Books Library** — Browse 80+ books, preview via Google Books, read full texts from Gutenberg
+- **Reading Timer** — Track reading sessions with start/pause/stop
+- **Reading List** — Want to Read / Currently Reading / Finished with progress tracking
 - **Reviews & Ratings** — Write reviews, rate books 1-5 stars
 - **Google Books API** — Discover millions of books
+- **Project Gutenberg** — 60+ classic books with full readable text
 
 ### 🎮 Games
 - **Guess the Book** — AI gives cryptic hints, you guess the title in 15 tries. Win badges and confetti!
+- **Book Bingo** — Weekly 4x4 bingo cards with reading challenges. Complete rows for badges and LiCo!
 - **Character Lookalike** — Upload a selfie, find your literary twin
 
 ### 🏆 Gamification
-- **Challenges** — 30+ reading challenges with badges
-- **Badges** — Earn achievements for reading, reviewing, posting, and winning games
-- **LiCo Economy** — Virtual currency for tipping, upgrades, and premium features
-- **Reader Clusters** — Discover your reading personality
-- **BookTok Awards** — Nominate and vote for community favorites
+- **Challenges** — 30+ reading challenges with progress tracking
+- **Badges** — Earn achievements for reading, reviewing, posting, games, and bingo
+- **LiCo Economy** — Virtual currency for tipping, golden badge, Libby upgrade, premium dashboard
+- **Reader Clusters** — Discover your reading personality (Fantasy Fanatic, Sci-Fi Explorer, etc.)
+- **BookTok Awards** — Community nominations and voting for best books, stories, and reviewers
 - **Streaks** — Daily writing goals with streak tracking
 
 ### 🎨 Customization
-- **Avatar Builder** — DiceBear integration for custom avatars
+- **Avatar Builder** — DiceBear integration with multiple styles
 - **Dark Mode** — Full dark mode with CSS variables
 - **Profile Editing** — Bio, username, password, profile picture
+- **Private Profile** — Toggle profile visibility
 
 ### 📊 Analytics
-- **Your Dashboard** — Stats on posts, likes, reading habits
+- **Your Dashboard** — Stats on posts, likes, reading habits, and reading time
 - **Reading Charts** — Monthly book completion graphs (Chart.js)
-- **Genre Radar** — See your reading preferences visualized
-- **Premium Insights** — Advanced analytics (unlockable)
+- **Genre Radar** — Visualize your reading preferences
+- **Premium Insights** — Advanced analytics: reading pace, engagement per post (unlockable with LiCo)
 
 ### 🎭 Fun
 - **Splash Screen** — Animated book logo intro
 - **Daily Book Pick** — Libby's AI-curated daily recommendation
 - **Book News** — Latest publishing news via NewsAPI
 - **Discover Page** — Search the entire Google Books catalog
+- **Trending** — Most liked posts, popular books, top reviewers, trending tags
 
 ---
 
@@ -82,31 +87,54 @@ BookTok is a complete social platform where readers connect, share reviews, writ
 |-------|-----------|
 | **Backend** | Node.js, Express.js |
 | **Database** | SQLite (better-sqlite3) |
-| **Real-time** | Socket.io |
+| **Real-time** | Socket.io (private chat + community chat) |
 | **Auth** | Passport.js (Local + Google OAuth 2.0) |
 | **AI** | Groq (Llama 3.1, Llama 4 Scout), Google Gemini |
 | **File Uploads** | Multer |
 | **Charts** | Chart.js |
-| **APIs** | Google Books, NewsAPI, DiceBear Avatars |
+| **APIs** | Google Books, NewsAPI, Project Gutenberg, DiceBear Avatars |
 | **Frontend** | Vanilla HTML, CSS, JavaScript (No frameworks!) |
 
 ---
-
 ## 🏗️ Project Structure
+
 ```
 BookTok/
-├── server.js # Main backend (1 file, 2500+ lines)
+├── server.js              # Main backend (3000+ lines)
 ├── database/
-│ └── setup.js # SQLite schema & seed data
+│   └── setup.js           # SQLite schema & seed data
 ├── public/
-│ ├── index.html # Main feed
-│ ├── chat.html # Real-time messaging
-│ ├── writo.html # AI writing studio
-│ ├── shorts.html # Video shorts feed
-│ ├── profile.html # User profiles
-│ ├── book.html # Book details
-│ ├── guess-book.html # AI guessing game
-│ └── ...20+ more files
+│   ├── index.html         # Main feed with tabs
+│   ├── chat.html          # Private real-time messaging
+│   ├── community.html     # Genre community group chat
+│   ├── writo.html         # AI writing studio
+│   ├── shorts.html        # Video shorts feed
+│   ├── profile.html       # User profiles with status
+│   ├── book.html          # Book details with timer & reviews
+│   ├── books.html         # Browse library
+│   ├── read.html          # Full-text reader with TTS
+│   ├── preview.html       # Google Books preview
+│   ├── guess-book.html    # AI book guessing game
+│   ├── bingo.html         # Weekly Book Bingo
+│   ├── ai-chat.html       # Libby AI librarian
+│   ├── character-chat.html # Chat with 40+ book characters
+│   ├── bookmate.html      # Reading soulmate finder
+│   ├── challenges.html    # Reading challenges
+│   ├── awards.html        # BookTok Awards
+│   ├── activities.html    # All games & activities hub
+│   ├── your_info.html     # Analytics dashboard
+│   ├── because.html       # Personalized recommendations
+│   ├── trending.html      # Trending content
+│   ├── discover.html      # Google Books search
+│   ├── book-news.html     # Publishing news
+│   ├── stories.html       # Community stories
+│   ├── tags.html          # Tag-based discovery
+│   ├── game-character.html # Character lookalike
+│   ├── avatar.html        # Avatar builder
+│   ├── splash.html        # Animated splash screen
+│   ├── style.css          # Main stylesheet
+│   ├── app.js             # Main app logic
+│   └── ...                # CSS & JS utilities
 └── package.json
 ```
 
@@ -115,27 +143,20 @@ BookTok/
 ## 🚀 Run Locally
 
 ```bash
-# Clone the repo
 git clone https://github.com/Aditya-cyber-hind/BookTok.git
-
-# Install dependencies
 cd BookTok
 npm install
-
-# Create .env file with your API keys
-# (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, SESSION_SECRET, GROQ_API_KEY, etc.)
-
-# Start the server
 node server.js
-
 # Open http://localhost:3000
+```
+
 ---
 
 ## 🧠 Built By
 
 **Aditya Choudhary** — 13 years old, 8th grader from India 🇮🇳
 
-This project was built for a hackathon. Every line of code was written from scratch — no templates, no website builders, no AI-generated boilerplate.
+This project was built for a hackathon. Every line of code was written from scratch — no templates, no website builders, no AI-generated boilerplate. 40+ features, 30+ pages, 3000+ lines of backend code, all vanilla JavaScript.
 
 ---
 
