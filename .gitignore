@@ -4,3 +4,23 @@ node_modules/
 uploads/*
 !uploads/.gitkeep
 cloudflared.exe
+booktok-deploy.zip
+package-lock.json
+server_backup.js
+add-books.js
+add-books2.js
+add-books3.js
+check-texts.js
+clear-google-ids.js
+cluster_users.py
+fetch-openlibrary.js
+fetch-previews.js
+fetch-texts.js
+fill-google-ids.js
+list-texts.js
+arix_materials.csv
+arix_ui.py
+blackhole.c
+eryx is the best.txt
+please.txt
+render.yaml
