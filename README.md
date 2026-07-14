@@ -20,7 +20,7 @@ BookTok is a complete social platform where readers connect, share reviews, writ
 ### 📱 Social
 - **Feed** — Global, Friends, and AI-powered "For You" with smart 5-signal algorithm
 - **Posts** — Text, quotes, images, and video uploads
-- **Shorts** — TikTok-style vertical video feed with auto-play
+- **Shorts** — TikTok-style vertical video feed with auto-play, pause animation, and arrow key navigation
 - **Comments** — Nested replies with real-time updates
 - **Likes & Tips** — Appreciate posts with ❤️ or LiCo coins
 - **Stories** — Instagram-style status updates (24hr expiry)
@@ -32,25 +32,32 @@ BookTok is a complete social platform where readers connect, share reviews, writ
 - **Friend System** — Send requests, accept, block, and report users
 
 ### 🤖 AI-Powered
-- **Libby AI Chat** — Talk to your personal librarian with upgradeable AI (Groq-powered)
+- **Libby AI Chat** — Talk to your personal librarian with upgradeable AI (Groq Llama 3.1)
 - **Writo Studio** — Write stories with an AI co-writer, rich text editor, and cover generator
-- **Character Chat** — Chat with 40+ literary characters (Sherlock, Gandalf, Hermione, Dracula, etc.)
-- **Character Lookalike** — Upload a photo, find your book character twin (Llama 4 Scout)
+- **Character Chat** — Chat with 40+ literary characters with voice call support (speech recognition + TTS)
+- **Character Lookalike** — Upload a photo, find your book character twin (Llama 4 Scout vision)
 - **BookMate** — AI reading soulmate finder based on shared books and genres
 - **Cover Generator** — AI-generated book covers (Google Gemini)
 
 ### 📖 Reading
-- **Books Library** — Browse 80+ books, preview via Google Books, read full texts from Gutenberg
+- **Books Library** — Browse 40+ books with Open Library and Google Books previews
 - **Reading Timer** — Track reading sessions with start/pause/stop
 - **Reading List** — Want to Read / Currently Reading / Finished with progress tracking
 - **Reviews & Ratings** — Write reviews, rate books 1-5 stars
-- **Google Books API** — Discover millions of books
-- **Project Gutenberg** — 60+ classic books with full readable text
+- **Google Books API** — Discover millions of books worldwide
+- **Project Gutenberg** — 10 classic books with full readable text
 
 ### 🎮 Games
-- **Guess the Book** — AI gives cryptic hints, you guess the title in 15 tries. Win badges and confetti!
-- **Book Bingo** — Weekly 4x4 bingo cards with reading challenges. Complete rows for badges and LiCo!
+- **Guess the Book** — AI gives cryptic hints, guess the title in 15 tries with confetti celebration
+- **Book Bingo** — Weekly 4x4 bingo cards with reading challenges and badge rewards
+- **Book Trivia** — AI generates quiz questions from your reading history
+- **Book Scramble** — Unscramble jumbled book titles with streak tracking
 - **Character Lookalike** — Upload a selfie, find your literary twin
+
+### 🎵 Vibe Zone
+- **Personal Mix** — Music playlists matching your reading mood via YouTube Music
+- **Trending Tracks** — Hot songs curated for the BookTok community
+- **Embedded Player** — Listen while you browse with now-playing display
 
 ### 🏆 Gamification
 - **Challenges** — 30+ reading challenges with progress tracking
@@ -70,7 +77,7 @@ BookTok is a complete social platform where readers connect, share reviews, writ
 - **Your Dashboard** — Stats on posts, likes, reading habits, and reading time
 - **Reading Charts** — Monthly book completion graphs (Chart.js)
 - **Genre Radar** — Visualize your reading preferences
-- **Premium Insights** — Advanced analytics: reading pace, engagement per post (unlockable with LiCo)
+- **Premium Insights** — Advanced analytics unlockable with LiCo
 
 ### 🎭 Fun
 - **Splash Screen** — Animated book logo intro
@@ -90,12 +97,15 @@ BookTok is a complete social platform where readers connect, share reviews, writ
 | **Real-time** | Socket.io (private chat + community chat) |
 | **Auth** | Passport.js (Local + Google OAuth 2.0) |
 | **AI** | Groq (Llama 3.1, Llama 4 Scout), Google Gemini |
+| **Speech** | Web Speech API (SpeechRecognition + SpeechSynthesis) |
+| **Music** | YouTube Data API v3 |
 | **File Uploads** | Multer |
 | **Charts** | Chart.js |
-| **APIs** | Google Books, NewsAPI, Project Gutenberg, DiceBear Avatars |
+| **APIs** | Google Books, Open Library, Project Gutenberg, NewsAPI, DiceBear Avatars |
 | **Frontend** | Vanilla HTML, CSS, JavaScript (No frameworks!) |
 
 ---
+
 ## 🏗️ Project Structure
 
 ```
@@ -108,16 +118,19 @@ BookTok/
 │   ├── chat.html          # Private real-time messaging
 │   ├── community.html     # Genre community group chat
 │   ├── writo.html         # AI writing studio
-│   ├── shorts.html        # Video shorts feed
+│   ├── shorts.html        # Video shorts feed (YouTube-style UI)
 │   ├── profile.html       # User profiles with status
 │   ├── book.html          # Book details with timer & reviews
 │   ├── books.html         # Browse library
 │   ├── read.html          # Full-text reader with TTS
-│   ├── preview.html       # Google Books preview
+│   ├── preview.html       # Book preview
 │   ├── guess-book.html    # AI book guessing game
 │   ├── bingo.html         # Weekly Book Bingo
+│   ├── trivia.html        # Book Trivia quiz
+│   ├── scramble.html      # Book Scramble game
+│   ├── vibe.html          # Vibe Zone music player
 │   ├── ai-chat.html       # Libby AI librarian
-│   ├── character-chat.html # Chat with 40+ book characters
+│   ├── character-chat.html # Chat with 40+ characters + voice calls
 │   ├── bookmate.html      # Reading soulmate finder
 │   ├── challenges.html    # Reading challenges
 │   ├── awards.html        # BookTok Awards
@@ -156,7 +169,7 @@ node server.js
 
 **Aditya Choudhary** — 13 years old, 8th grader from India 🇮🇳
 
-This project was built for a hackathon. Every line of code was written from scratch — no templates, no website builders, no AI-generated boilerplate. 40+ features, 30+ pages, 3000+ lines of backend code, all vanilla JavaScript.
+This project was built for a hackathon. Every line of code was written from scratch — no templates, no website builders, no AI-generated boilerplate. 45+ features, 35+ pages, 3000+ lines of backend code, all vanilla JavaScript.
 
 ---
 
