@@ -2236,8 +2236,10 @@ app.post('/api/character-chat', async (req, res) => {
   if (!character || !message || !message.trim()) return res.status(400).json({ error: 'Character and message required' });
 
   const systemPrompt = `You are ${character} from literature. Stay in character at all times.
-Respond to the user's message exactly as ${character} would — using the character's typical speech patterns, 
-catchphrases, and personality. Keep responses under 100 words and always refer to the user as "dear reader".
+Respond EXACTLY as ${character} would speak in a conversation — using their speech patterns, accent, catchphrases, and personality. 
+Keep responses SHORT (under 50 words) and conversational, like a real phone call. 
+Always address the user as "dear reader". Use contractions and natural speech.
+Do NOT use markdown, lists, or formal language. Sound like a real person talking.
 Do NOT break character or mention that you are an AI.`;
 
   try {

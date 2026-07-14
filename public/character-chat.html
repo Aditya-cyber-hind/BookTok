@@ -191,9 +191,11 @@
       padding: 15px 20px;
       border-top: 1px solid var(--border);
       background: var(--card-bg);
+      flex-wrap: wrap;
     }
     .input-area input {
       flex: 1;
+      min-width: 150px;
       padding: 12px 18px;
       border-radius: 25px;
       border: 1px solid var(--border);
@@ -210,8 +212,16 @@
       background: var(--primary);
       color: white;
       transition: all 0.2s;
+      white-space: nowrap;
     }
     .btn:hover { background: var(--primary-hover); }
+    .btn-call {
+      background: #e74c3c;
+    }
+    .btn-call.active {
+      background: #c0392b;
+      animation: pulse 1.5s infinite;
+    }
     .typing {
       align-self: flex-start;
       color: var(--text-light);
@@ -219,9 +229,28 @@
       padding: 8px 18px;
       display: none;
     }
+    #voice-status {
+      display: none;
+      text-align: center;
+      padding: 10px;
+      background: #f8d7da;
+      color: #721c24;
+      border-radius: 8px;
+      margin: 5px 20px;
+      font-weight: 600;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 600px) {
+      .input-area { flex-direction: column; }
+      .input-area input { min-width: auto; }
     }
   </style>
 </head>
@@ -254,9 +283,11 @@
     </div>
     <div class="messages-area" id="messages"></div>
     <div class="typing" id="typing">Typing…</div>
+    <div id="voice-status">🎙️ Listening... Speak now!</div>
     <div class="input-area">
-      <input type="text" id="user-input" placeholder="Type your message…" onkeypress="if(event.key==='Enter') sendMessage()">
+      <input type="text" id="user-input" placeholder="Type your message…" onkeypress="if(event.key==='Enter')sendMessage()">
       <button class="btn" onclick="sendMessage()">Send</button>
+      <button class="btn btn-call" id="voice-call-btn" onclick="toggleVoiceCall()">🎙️ Call</button>
     </div>
   </div>
 
@@ -295,17 +326,17 @@
       { name: "Voldemort", book: "Harry Potter series", author: "J.K. Rowling", genre: "Fantasy", emoji: "🐍", desc: "The darkest wizard of all time — feared, powerful, and consumed by immortality." },
       { name: "Aslan", book: "The Chronicles of Narnia", author: "C.S. Lewis", genre: "Fantasy", emoji: "🦁", desc: "The great lion — wise, majestic, and the true king of Narnia." },
       { name: "Dr. Watson", book: "Sherlock Holmes series", author: "Arthur Conan Doyle", genre: "Mystery", emoji: "🩺", desc: "Loyal friend, doctor, and chronicler of Holmes's greatest adventures." },
-      { name: "Moby Dick", book: "Moby Dick", author: "Herman Melville", genre: "Adventure", emoji: "🐋", desc: "The legendary white whale — enormous, enigmatic, and unstoppable." },
       { name: "Winnie the Pooh", book: "Winnie-the-Pooh", author: "A.A. Milne", genre: "Children", emoji: "🍯", desc: "A bear of very little brain but a very big heart — always hungry for honey." },
       { name: "Pippi Longstocking", book: "Pippi Longstocking", author: "Astrid Lindgren", genre: "Children", emoji: "🧦", desc: "Strongest girl in the world — independent, quirky, and endlessly fun." },
-      { name: "Raskolnikov", book: "Crime and Punishment", author: "Fyodor Dostoevsky", genre: "Classics", emoji: "🪓", desc: "A troubled young man grappling with guilt, morality, and redemption." },
       { name: "Jane Eyre", book: "Jane Eyre", author: "Charlotte Brontë", genre: "Romance", emoji: "📜", desc: "Passionate, principled governess who refuses to compromise her self‑worth." },
       { name: "Draco Malfoy", book: "Harry Potter series", author: "J.K. Rowling", genre: "Fantasy", emoji: "🐉", desc: "Proud Slytherin with a sharp tongue and a conflicted heart." },
-      { name: "Paddington Bear", book: "A Bear Called Paddington", author: "Michael Bond", genre: "Children", emoji: "🧸", desc: "A polite, marmalade‑loving bear from Peru who finds adventure in London." },
       { name: "Bilbo Baggins", book: "The Hobbit", author: "J.R.R. Tolkien", genre: "Fantasy", emoji: "🗡️", desc: "A reluctant hobbit adventurer who discovers courage he never knew he had." }
     ];
 
     let currentCharacter = null;
+    let isVoiceCallActive = false;
+    let recognition = null;
+    let synth = window.speechSynthesis;
     let allGenres = [...new Set(characters.map(c => c.genre))].sort();
 
     // Init browse mode
@@ -376,10 +407,14 @@
       document.getElementById('chat-char-name').textContent = name;
       document.getElementById('chat-char-book').textContent = `From "${book}" by ${author}`;
       document.getElementById('messages').innerHTML = '';
+      document.getElementById('voice-call-btn').textContent = '🎙️ Call';
+      document.getElementById('voice-call-btn').classList.remove('active');
+      document.getElementById('voice-status').style.display = 'none';
       addMessage('character', `Hello dear reader! I'm ${name} from "${book}". What shall we talk about?`);
     }
 
     function goBack() {
+      if (isVoiceCallActive) stopVoiceCall();
       document.getElementById('chat-mode').style.display = 'none';
       document.getElementById('browse-mode').style.display = 'block';
       document.getElementById('header-title').textContent = '🎭 Character Chat';
@@ -418,6 +453,118 @@
       div.textContent = text;
       container.appendChild(div);
       container.scrollTop = container.scrollHeight;
+    }
+
+    // ─── VOICE CALL FUNCTIONS ──────────────────────
+
+    function toggleVoiceCall() {
+      if (isVoiceCallActive) {
+        stopVoiceCall();
+      } else {
+        startVoiceCall();
+      }
+    }
+
+    function startVoiceCall() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert('Speech recognition not supported in your browser. Try Chrome.');
+        return;
+      }
+      
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+        isVoiceCallActive = true;
+        document.getElementById('voice-call-btn').textContent = '🔴 End Call';
+        document.getElementById('voice-call-btn').classList.add('active');
+        document.getElementById('voice-status').style.display = 'block';
+      };
+      
+      recognition.onresult = async (event) => {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('voice-status').textContent = `🗣️ You said: "${transcript}"`;
+        
+        addMessage('user', transcript);
+        
+        try {
+          const res = await fetch('/api/character-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ character: currentCharacter?.name || 'Unknown', message: transcript })
+          });
+          const data = await res.json();
+          
+          if (data.reply) {
+            addMessage('character', data.reply);
+            speakText(data.reply);
+          }
+        } catch(e) {
+          addMessage('character', 'I seem to have lost my voice, dear reader.');
+        }
+        
+        if (isVoiceCallActive) {
+          setTimeout(() => {
+            document.getElementById('voice-status').textContent = '🎙️ Listening... Speak now!';
+            try { recognition.start(); } catch(e) {}
+          }, 2000);
+        }
+      };
+      
+      recognition.onerror = (event) => {
+        console.error('Speech error:', event.error);
+        if (event.error === 'no-speech' && isVoiceCallActive) {
+          document.getElementById('voice-status').textContent = '🎙️ Listening... Speak now!';
+          setTimeout(() => { try { recognition.start(); } catch(e) {} }, 500);
+        }
+        if (event.error === 'not-allowed') {
+          alert('Microphone access denied. Please allow mic permissions.');
+          stopVoiceCall();
+        }
+      };
+      
+      recognition.onend = () => {
+        if (isVoiceCallActive) {
+          try { recognition.start(); } catch(e) { stopVoiceCall(); }
+        }
+      };
+      
+      recognition.start();
+    }
+
+    function stopVoiceCall() {
+      isVoiceCallActive = false;
+      if (recognition) {
+        try { recognition.stop(); } catch(e) {}
+        recognition = null;
+      }
+      synth.cancel();
+      document.getElementById('voice-call-btn').textContent = '🎙️ Call';
+      document.getElementById('voice-call-btn').classList.remove('active');
+      document.getElementById('voice-status').style.display = 'none';
+    }
+
+    function speakText(text) {
+      synth.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+      utterance.volume = 1;
+      
+      const voices = synth.getVoices();
+      if (voices.length > 0) {
+        const preferred = voices.find(v => 
+          v.name.includes('Google US English') || 
+          v.name.includes('Samantha') || 
+          v.name.includes('Daniel')
+        );
+        if (preferred) utterance.voice = preferred;
+      }
+      
+      synth.speak(utterance);
     }
 
     // Start
