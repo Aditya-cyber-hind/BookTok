@@ -176,7 +176,15 @@
         renderPage();
         document.getElementById('page-navigation').style.display = 'flex';
       } catch (e) {
-        document.getElementById('reader-container').innerHTML = '<p class="loading-text">This book isn\'t available for reading yet.</p>';
+        // Fallback for books without full text
+        document.getElementById('book-title').textContent = 'Preview Mode';
+        fullText = 'This book is available for preview. Full reading text is not available for this title yet, but you can use the preview feature to browse the book. Check back later for more books with full text!';
+        pages = [fullText];
+        currentPage = 0;
+        renderPage();
+        document.getElementById('page-navigation').style.display = 'flex';
+        document.getElementById('prev-btn').disabled = true;
+        document.getElementById('next-btn').disabled = true;
       }
     }
 
@@ -190,8 +198,12 @@
       if (isSpeaking) stopSpeech();
     }
 
-    function nextPage() { if (currentPage < pages.length - 1) { currentPage++; renderPage(); } }
-    function prevPage() { if (currentPage > 0) { currentPage--; renderPage(); } }
+    function nextPage() { 
+      if (currentPage < pages.length - 1) { currentPage++; renderPage(); } 
+    }
+    function prevPage() { 
+      if (currentPage > 0) { currentPage--; renderPage(); } 
+    }
 
     async function startReaderTimer() {
       if (!bookId) return;
@@ -222,22 +234,46 @@
     });
 
     function toggleTTS() {
-      if (isSpeaking) { stopSpeech(); } else { startSpeech(); }
+      if (isSpeaking) { 
+        stopSpeech(); 
+      } else { 
+        startSpeech(); 
+      }
     }
 
     function startSpeech() {
       if (!pages.length) return;
-      const text = document.createElement('div'); text.innerHTML = pages[currentPage];
+      const text = document.createElement('div'); 
+      text.innerHTML = pages[currentPage];
       const clean = text.textContent.trim();
       if (!clean) return;
       const u = new SpeechSynthesisUtterance(clean);
       u.rate = 0.9;
-      u.onstart = () => { isSpeaking = true; const b = document.getElementById('tts-toggle'); b.textContent = '⏹ Stop'; b.classList.add('active-tts'); };
-      u.onend = () => { isSpeaking = false; const b = document.getElementById('tts-toggle'); b.textContent = '🔊 Read Aloud'; b.classList.remove('active-tts'); };
+      u.onstart = () => { 
+        isSpeaking = true; 
+        const b = document.getElementById('tts-toggle');
+        if (b) { b.textContent = '⏹ Stop'; b.classList.add('active-tts'); }
+      };
+      u.onend = () => { 
+        isSpeaking = false; 
+        const b = document.getElementById('tts-toggle');
+        if (b) { b.textContent = '🔊 Read Aloud'; b.classList.remove('active-tts'); }
+      };
+      u.onerror = () => {
+        isSpeaking = false;
+        const b = document.getElementById('tts-toggle');
+        if (b) { b.textContent = '🔊 Read Aloud'; b.classList.remove('active-tts'); }
+      };
+      speechSynthesis.cancel();
       speechSynthesis.speak(u);
     }
 
-    function stopSpeech() { speechSynthesis.cancel(); isSpeaking = false; }
+    function stopSpeech() { 
+      speechSynthesis.cancel(); 
+      isSpeaking = false;
+      const b = document.getElementById('tts-toggle');
+      if (b) { b.textContent = '🔊 Read Aloud'; b.classList.remove('active-tts'); }
+    }
 
     loadText();
   </script>

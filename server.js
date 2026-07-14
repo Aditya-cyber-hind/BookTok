@@ -2888,6 +2888,130 @@ app.post('/api/communities/:id/messages', (req, res) => {
   
   res.json(message);
 });
+// ─── VIBE ZONE: YOUTUBE MUSIC PLAYLIST ──────────────────────
+
+// Get user's reading-based music recommendations
+app.get('/api/vibe/personal', async (req, res) => {
+  const userId = getCurrentUserId(req);
+  if (!userId) return res.status(401).json({ error: 'Not logged in' });
+  
+  // Get user's finished books with genres
+  const userBooks = db.prepare(`
+    SELECT b.genre, b.title FROM reading_list r
+    JOIN books b ON r.book_id = b.id
+    WHERE r.user_id = ? AND r.status = 'finished'
+    ORDER BY r.added_at DESC LIMIT 10
+  `).all(userId);
+  
+  if (userBooks.length === 0) {
+    return res.json({ tracks: [], message: 'Finish some books to get your personal playlist!' });
+  }
+  
+  // Get top genre
+  const genreCounts = {};
+  userBooks.forEach(b => genreCounts[b.genre] = (genreCounts[b.genre] || 0) + 1);
+  const topGenre = Object.entries(genreCounts).sort((a,b) => b[1] - a[1])[0][0];
+  
+  // Map genre to YouTube search query
+  const genreVibes = {
+    'Fantasy': 'epic fantasy orchestral soundtrack',
+    'Sci-Fi': 'synthwave sci-fi music mix',
+    'Dystopian': 'dark atmospheric cinematic music',
+    'Romance': 'romantic piano instrumental love songs',
+    'Mystery': 'mystery suspense background music',
+    'Horror': 'dark ambient horror soundtrack',
+    'Adventure': 'epic adventure cinematic music',
+    'Historical Fiction': 'classical period drama soundtrack',
+    'Classics': 'classical music for reading',
+    'Non-Fiction': 'lo-fi study music',
+    'Comedy': 'upbeat happy instrumental music',
+    'Children': 'relaxing piano for studying',
+    'Biography': 'inspirational instrumental music',
+    'Thriller': 'intense cinematic action music',
+    'Poetry': 'calm acoustic instrumental music',
+    'Self-Help': 'motivational focus music'
+  };
+  
+  const searchQuery = genreVibes[topGenre] || topGenre + ' music for reading';
+  
+  try {
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=8&q=${encodeURIComponent(searchQuery)}&type=video&videoCategoryId=10&key=${apiKey}`;
+    
+    const ytRes = await fetch(url);
+    const ytData = await ytRes.json();
+    
+    const tracks = (ytData.items || []).map(item => ({
+      name: item.snippet.title,
+      artist: item.snippet.channelTitle,
+      videoId: item.id.videoId,
+      thumbnail: item.snippet.thumbnails.medium.url
+    }));
+    
+    res.json({ tracks, genre: topGenre, vibe: searchQuery });
+  } catch(e) {
+    console.error('Vibe error:', e);
+    res.json({ tracks: [], message: 'Music service unavailable right now.' });
+  }
+});
+
+// Get trending/hyped tracks
+let vibeCachedTracks = null;
+let vibeLastCache = null;
+
+app.get('/api/vibe/trending', async (req, res) => {
+  if (vibeCachedTracks && vibeLastCache && (Date.now() - vibeLastCache) < 1800000) {
+    return res.json(vibeCachedTracks);
+  }
+  
+  // Trending searches that are always hype
+  const trendingSearches = [
+    'epic motivational music 2025',
+    'best reading playlist',
+    'cinematic orchestral music',
+    'lo-fi hip hop study beats',
+    'dark academia classical',
+    'fantasy music world building',
+    'chill music for reading',
+    'powerful instrumental music'
+  ];
+  
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  const allTracks = [];
+  
+  try {
+    for (const search of trendingSearches) {
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=2&q=${encodeURIComponent(search)}&type=video&videoCategoryId=10&order=viewCount&key=${apiKey}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const tracks = (data.items || []).map(item => ({
+        name: item.snippet.title,
+        artist: item.snippet.channelTitle,
+        videoId: item.id.videoId,
+        thumbnail: item.snippet.thumbnails.medium.url,
+        tag: search
+      }));
+      allTracks.push(...tracks);
+      await new Promise(r => setTimeout(r, 300));
+    }
+    
+    // Remove duplicates by videoId
+    const unique = [];
+    const seen = new Set();
+    for (const track of allTracks) {
+      if (!seen.has(track.videoId)) {
+        seen.add(track.videoId);
+        unique.push(track);
+      }
+    }
+    
+    vibeCachedTracks = { tracks: unique.slice(0, 12) };
+    vibeLastCache = Date.now();
+    res.json(vibeCachedTracks);
+  } catch(e) {
+    res.json({ tracks: [] });
+  }
+});
 // ─── START ──────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`📚 BookTok running at http://localhost:${PORT}`));

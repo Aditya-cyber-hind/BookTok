@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vibe Zone - BookTok</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; color: var(--text); }
+    .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 15px; color: var(--primary); text-decoration: none; font-weight: 600; }
+    h1 { color: var(--primary); display: flex; align-items: center; gap: 10px; margin-bottom: 5px; font-size: 2em; }
+    .header-tagline { color: var(--text-light); margin-bottom: 25px; }
+    .section-title { font-size: 1.3em; font-weight: 700; color: #5a3e28; margin: 25px 0 15px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+
+    /* Player */
+    .player-embed { background: #000; border-radius: 16px; overflow: hidden; margin-bottom: 30px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+    .player-embed iframe { width: 100%; height: 280px; display: block; }
+    .now-playing { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--card-bg); }
+    .now-playing img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; }
+    .now-playing-info { flex: 1; min-width: 0; }
+    .now-playing-title { font-weight: 700; font-size: 0.95em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .now-playing-artist { font-size: 0.8em; color: var(--text-light); }
+    .now-playing-vibe { background: var(--accent); color: #3a2c1b; padding: 3px 10px; border-radius: 12px; font-size: 0.7em; font-weight: 600; }
+
+    /* Track list */
+    .track-list { display: flex; flex-direction: column; gap: 6px; }
+    .track-item { display: flex; align-items: center; gap: 12px; background: var(--card-bg); padding: 10px 14px; border-radius: 12px; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); }
+    .track-item:hover { border-color: var(--primary); background: var(--bg); }
+    .track-item.playing { border-color: var(--primary); background: rgba(139,94,60,0.08); }
+    .track-item img { width: 44px; height: 33px; border-radius: 4px; object-fit: cover; }
+    .track-item-info { flex: 1; min-width: 0; }
+    .track-item-title { font-weight: 600; font-size: 0.85em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .track-item-artist { font-size: 0.75em; color: var(--text-light); }
+    .track-item-btn { background: var(--primary); color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 0.8em; display: flex; align-items: center; justify-content: center; }
+    .empty-state { text-align: center; padding: 30px; color: var(--text-light); background: var(--card-bg); border-radius: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link">← Back to Feed</a>
+    <h1>🎵 Vibe Zone</h1>
+    <p class="header-tagline">Music that matches your reading mood — powered by your bookshelf.</p>
+
+    <!-- YouTube Player -->
+    <div class="player-embed" id="player-embed">
+      <iframe id="yt-player" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      <div class="now-playing" id="now-playing">
+        <img id="np-thumb" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50'%3E%3Crect fill='%23ddd' width='50' height='50'/%3E%3Ctext x='25' y='30' text-anchor='middle'%3E🎵%3C/text%3E%3C/svg%3E">
+        <div class="now-playing-info">
+          <div class="now-playing-title">Select a track to play</div>
+          <div class="now-playing-artist">Browse the lists below</div>
+        </div>
+        <span class="now-playing-vibe" id="np-vibe"></span>
+      </div>
+    </div>
+
+    <!-- Personal Mix -->
+    <div class="section-title">🎧 Your Personal Mix</div>
+    <div class="track-list" id="personal-tracks"><div class="empty-state">Reading your bookshelf...</div></div>
+
+    <!-- Trending -->
+    <div class="section-title">🔥 Hot on BookTok</div>
+    <div class="track-list" id="trending-tracks"><div class="empty-state">Loading trending tracks...</div></div>
+  </div>
+
+  <script>
+    let currentVideoId = null;
+
+    function playTrack(track, vibe) {
+      currentVideoId = track.videoId;
+      document.getElementById('yt-player').src = `https://www.youtube.com/embed/${track.videoId}?autoplay=1`;
+      document.getElementById('np-thumb').src = track.thumbnail;
+      document.getElementById('now-playing').querySelector('.now-playing-title').textContent = track.name;
+      document.getElementById('now-playing').querySelector('.now-playing-artist').textContent = track.artist;
+      document.getElementById('np-vibe').textContent = vibe || '';
+      
+      // Highlight playing track
+      document.querySelectorAll('.track-item').forEach(el => el.classList.remove('playing'));
+      document.querySelector(`[data-videoid="${track.videoId}"]`)?.classList.add('playing');
+    }
+
+    async function loadPersonal() {
+      const container = document.getElementById('personal-tracks');
+      try {
+        const res = await fetch('/api/vibe/personal');
+        const data = await res.json();
+        if (data.message) {
+          container.innerHTML = `<div class="empty-state">📖 ${data.message}</div>`;
+          return;
+        }
+        container.innerHTML = data.tracks.map((t, i) => `
+          <div class="track-item" data-videoid="${t.videoId}" onclick="playTrack({name:'${escapeHTML(t.name).replace(/'/g, "\\'")}',artist:'${escapeHTML(t.artist).replace(/'/g, "\\'")}',videoId:'${t.videoId}',thumbnail:'${t.thumbnail}'}, '${escapeHTML(data.vibe || '')}')">
+            <img src="${t.thumbnail}" alt="">
+            <div class="track-item-info">
+              <div class="track-item-title">${escapeHTML(t.name)}</div>
+              <div class="track-item-artist">${escapeHTML(t.artist)}</div>
+            </div>
+            <button class="track-item-btn">▶</button>
+          </div>
+        `).join('') || '<div class="empty-state">No tracks found for your genre yet.</div>';
+      } catch(e) {
+        container.innerHTML = '<div class="empty-state">Could not load your playlist.</div>';
+      }
+    }
+
+    async function loadTrending() {
+      const container = document.getElementById('trending-tracks');
+      try {
+        const res = await fetch('/api/vibe/trending');
+        const data = await res.json();
+        container.innerHTML = data.tracks.map(t => `
+          <div class="track-item" data-videoid="${t.videoId}" onclick="playTrack({name:'${escapeHTML(t.name).replace(/'/g, "\\'")}',artist:'${escapeHTML(t.artist).replace(/'/g, "\\'")}',videoId:'${t.videoId}',thumbnail:'${t.thumbnail}'}, '${escapeHTML(t.tag || 'Trending')}')">
+            <img src="${t.thumbnail}" alt="">
+            <div class="track-item-info">
+              <div class="track-item-title">${escapeHTML(t.name)}</div>
+              <div class="track-item-artist">${escapeHTML(t.artist)}</div>
+            </div>
+            <button class="track-item-btn">▶</button>
+          </div>
+        `).join('') || '<div class="empty-state">No trending tracks right now.</div>';
+      } catch(e) {
+        container.innerHTML = '<div class="empty-state">Could not load trending tracks.</div>';
+      }
+    }
+
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+
+    loadPersonal();
+    loadTrending();
+  </script>
+</body>
+</html>
